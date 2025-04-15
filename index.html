@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+9<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -82,15 +82,21 @@
   }
 
   // Покупка улучшения
-  function buyUpgrade() {
+  // Покупка улучшения
+function buyUpgrade() {
     if (coins >= upgradeCost) {
-      coins -= upgradeCost;
-      autoClickers++;
-      upgradeCost = Math.floor(upgradeCost * 1.10); // +10%
-      saveData();
-      updateUI();
-      
-  }
+        coins -= upgradeCost;
+        autoClickers++;
+        upgradeCost = Math.floor(upgradeCost * 1.10); // +10%
+        saveData();
+        updateUI();
+        // Уберите строку с alert
+        // alert("Улучшение куплено!");
+    } else {
+        alert("Недостаточно коинов!");
+    }
+}
+
 
   // Обновление интерфейса
   function updateUI() {
