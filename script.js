@@ -1,4 +1,4 @@
-const coinButton = document.getElementById('coin');
+const coinContainer = document.getElementById('coin');
 const coinsDisplay = document.getElementById('coins');
 const highscoreDisplay = document.getElementById('highscore');
 
@@ -9,24 +9,15 @@ let highscore = localStorage.getItem('highscore') || 0;
 coinsDisplay.textContent = coins;
 highscoreDisplay.textContent = highscore;
 
-coinButton.addEventListener('click', function(e) {
-    // Получаем координаты клика относительно центра кнопки
+coinContainer.addEventListener('click', function(e) {
     const rect = this.getBoundingClientRect();
     const radius = rect.width / 2;
     const centerX = rect.left + radius;
     const centerY = rect.top + radius;
     
-    // Проверяем, находится ли клик внутри круга
-    const distance = Math.sqrt(
-        Math.pow(e.clientX - centerX, 2) + 
-        Math.pow(e.clientY - centerY, 2)
-    );
-    
-    if (distance > radius) return; // Игнорируем клики вне круга
-    
-    // Вычисляем направление наклона (инвертированное)
-    const relX = (centerX - e.clientX) / radius;
-    const relY = (centerY - e.clientY) / radius;
+    // Вычисляем направление наклона (в ту же сторону, куда кликнули)
+    const relX = (e.clientX - centerX) / radius;
+    const relY = (e.clientY - centerY) / radius;
     
     coins++;
     coinsDisplay.textContent = coins;
@@ -40,25 +31,36 @@ coinButton.addEventListener('click', function(e) {
     
     localStorage.setItem('coins', coins);
     
-    // Анимация с инвертированным наклоном
-    const img = this.querySelector('img');
-    const tiltAngle = 12; // Максимальный угол наклона
-    img.style.transform = `
+    // Анимация наклона
+    const coinButton = this.querySelector('.coin-button');
+    const tiltAngle = 12;
+    coinButton.style.transform = `
         perspective(500px) 
-        rotateX(${-relY * tiltAngle}deg) 
-        rotateY(${relX * tiltAngle}deg) 
+        rotateX(${relY * tiltAngle}deg) 
+        rotateY(${-relX * tiltAngle}deg) 
         scale(0.95)
     `;
     
     setTimeout(() => {
-        img.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
+        coinButton.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
     }, 200);
 });
 
-// Блокируем все нежелательные события
-coinButton.addEventListener('contextmenu', (e) => e.preventDefault());
-coinButton.addEventListener('mousedown', (e) => e.preventDefault());
-coinButton.addEventListener('dragstart', (e) => e.preventDefault());
+// Полная блокировка действий по умолчанию
+coinContainer.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    return false;
+});
+
+coinContainer.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    return false;
+});
+
+coinContainer.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    return false;
+});
 
 // Сброс прогресса
 console.log("Сбросить прогресс: localStorage.clear()");
