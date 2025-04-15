@@ -4,6 +4,7 @@
   --container-bg: #1e1e1e;
   --coin-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
   --highlight-color: #bb86fc;
+  --border-color: #333;
 }
 
 body {
@@ -28,7 +29,9 @@ body {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   width: 90%;
   max-width: 500px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
+  position: relative;
+  z-index: 10;
 }
 
 .balance {
@@ -36,7 +39,6 @@ body {
   margin-bottom: 20px;
   color: var(--text-color);
   position: relative;
-  z-index: 10;
 }
 
 .coin-container {
@@ -90,7 +92,8 @@ body {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 100;
+  z-index: 1000;
+  overflow: hidden;
 }
 
 .floating-number {
@@ -100,10 +103,11 @@ body {
   font-weight: bold;
   opacity: 1;
   transform: translate(0, 0);
-  animation: floatNumber 1s ease-out forwards;
+  animation: floatNumber 0.7s ease-out forwards;
   user-select: none;
   will-change: transform, opacity;
   text-shadow: 0 0 8px rgba(187, 134, 252, 0.5);
+  z-index: 1001;
 }
 
 @keyframes floatNumber {
@@ -149,5 +153,9 @@ body {
   
   .balance {
     font-size: 20px;
+  }
+  
+  .container {
+    padding: 20px;
   }
 }
