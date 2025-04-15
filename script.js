@@ -104,4 +104,11 @@ coinContainer.addEventListener('touchend', function(e) {
     const touch = e.changedTouches[0];
     const mouseEvent = new MouseEvent('mouseup', {
         clientX: touch.clientX,
-        client
+        clientY: touch.clientY
+    });
+    this.dispatchEvent(mouseEvent);
+});
+
+// Блокировка нежелательных действий
+coinContainer.addEventListener('contextmenu', (e) => e.preventDefault());
+coinContainer.addEventListener('dragstart', (e) => e.preventDefault());
