@@ -1,4 +1,77 @@
-/* Все предыдущие стили остаются */
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.container {
+    text-align: center;
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 500px;
+}
+
+.balance {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
+    position: relative;
+}
+
+.coin-container {
+    width: 300px;
+    height: 300px;
+    margin: 0 auto;
+    position: relative;
+    cursor: pointer;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.coin-button {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.coin-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.1);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.coin-container:active .coin-button::after {
+    opacity: 1;
+}
+
+.stats {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #555;
+}
 
 .floating-numbers {
     position: absolute;
@@ -9,27 +82,48 @@
     pointer-events: none;
     overflow: hidden;
     border-radius: 50%;
+    z-index: 2;
 }
 
 .floating-number {
     position: absolute;
-    color: gold;
-    font-size: 24px;
+    color: #FFD700;
+    font-size: 28px;
     font-weight: bold;
-    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(0, 0);
     animation: floatNumber 1s ease-out forwards;
     user-select: none;
+    will-change: transform, opacity;
 }
 
 @keyframes floatNumber {
     0% {
         opacity: 1;
-        transform: translate(0, 0);
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        opacity: 0.8;
     }
     100% {
         opacity: 0;
-        transform: translate(var(--target-x), var(--target-y));
+        transform: translate(var(--target-x), var(--target-y)) scale(0.5);
+    }
+}
+
+/* Для мобильных устройств */
+@media (max-width: 500px) {
+    .coin-container {
+        width: 250px;
+        height: 250px;
+    }
+    
+    .floating-number {
+        font-size: 24px;
+    }
+    
+    .balance {
+        font-size: 20px;
     }
 }
