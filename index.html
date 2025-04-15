@@ -99,7 +99,7 @@
         // Инициализация улучшений
         function initImprovements() {
             for (let i = 1; i <= 10; i++) {
-                const cost = 200 * Math.pow(2, i - 1); // Начальная стоимость 200, удваивается
+                const cost = 100 * Math.pow(2, i - 1); // Начальная стоимость 100, удваивается
                 const coinsPerSecond = 2 * Math.pow(2, i - 1); // Каждое улучшение дает 2 * 2^(i-1) коинов в секунду
                 enhancements.push({ cost: Math.floor(cost), coinsPerSecond, purchased: 0 });
 
@@ -168,10 +168,16 @@
 
         document.getElementById("openImprovementsBtn").addEventListener("click", () => {
             improvementsContainer.style.display = "block"; // Показываем меню улучшений
+            document.querySelector(".stats").style.display = "none"; // Скрываем основной интерфейс
+            document.getElementById("clickBtn").style.display = "none"; // Скрываем кнопку клика
+            document.getElementById("buyBtn").style.display = "none"; // Скрываем кнопку покупки автокликера
         });
 
         document.getElementById("closeImprovementsBtn").addEventListener("click", () => {
             improvementsContainer.style.display = "none"; // Скрываем меню улучшений
+            document.querySelector(".stats").style.display = "block"; // Показываем основной интерфейс
+            document.getElementById("clickBtn").style.display = "block"; // Показываем кнопку клика
+            document.getElementById("buyBtn").style.display = "block"; // Показываем кнопку покупки автокликера
         });
 
         loadData(); // Первая загрузка данных
