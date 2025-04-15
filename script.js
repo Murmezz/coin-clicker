@@ -10,16 +10,23 @@ coinsDisplay.textContent = coins;
 highscoreDisplay.textContent = highscore;
 
 coinButton.addEventListener('click', function(e) {
-    // Получаем координаты клика относительно кнопки
+    // Получаем координаты клика относительно центра кнопки
     const rect = this.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const radius = rect.width / 2;
+    const centerX = rect.left + radius;
+    const centerY = rect.top + radius;
     
-    // Определяем направление наклона
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const angleX = ((y - centerY) / centerY) * 15;
-    const angleY = ((centerX - x) / centerX) * 15;
+    // Проверяем, находится ли клик внутри круга
+    const distance = Math.sqrt(
+        Math.pow(e.clientX - centerX, 2) + 
+        Math.pow(e.clientY - centerY, 2)
+    );
+    
+    if (distance > radius) return; // Игнорируем клики вне круга
+    
+    // Вычисляем направление наклона (инвертированное)
+    const relX = (centerX - e.clientX) / radius;
+    const relY = (centerY - e.clientY) / radius;
     
     coins++;
     coinsDisplay.textContent = coins;
@@ -31,23 +38,27 @@ coinButton.addEventListener('click', function(e) {
         localStorage.setItem('highscore', highscore);
     }
     
-    // Сохраняем монеты
     localStorage.setItem('coins', coins);
     
-    // Анимация наклона
+    // Анимация с инвертированным наклоном
     const img = this.querySelector('img');
-    img.style.transform = `perspective(500px) rotateX(${angleX}deg) rotateY(${angleY}deg) scale(0.95)`;
+    const tiltAngle = 12; // Максимальный угол наклона
+    img.style.transform = `
+        perspective(500px) 
+        rotateX(${-relY * tiltAngle}deg) 
+        rotateY(${relX * tiltAngle}deg) 
+        scale(0.95)
+    `;
     
     setTimeout(() => {
         img.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
     }, 200);
 });
 
-// Отключаем контекстное меню
-coinButton.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    return false;
-});
+// Блокируем все нежелательные события
+coinButton.addEventListener('contextmenu', (e) => e.preventDefault());
+coinButton.addEventListener('mousedown', (e) => e.preventDefault());
+coinButton.addEventListener('dragstart', (e) => e.preventDefault());
 
-// Сброс (для теста)
+// Сброс прогресса
 console.log("Сбросить прогресс: localStorage.clear()");
