@@ -32,6 +32,8 @@ body {
     margin: 0 auto;
     position: relative;
     cursor: pointer;
+    border-radius: 50%;
+    overflow: hidden;
 }
 
 .coin-button {
@@ -44,7 +46,6 @@ body {
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease;
     position: relative;
-    z-index: 1;
 }
 
 .coin-button::after {
