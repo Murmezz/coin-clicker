@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -47,66 +46,48 @@
     <button id="buyBtn" class="upgrade-btn">Купить автокликер (<span id="upgradeCost">100</span>)</button>
 
     <!-- ОТСЮДА НАЧИНАЕТСЯ СКРИПТ -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-  // Конфиг Firebase (ваш)
-  const firebaseConfig = {
-    apiKey: "AIzaSyCvoUo12VfezS9NsRuvU2XdJiJtRguSVAo",
-    authDomain: "coins-d284d.firebaseapp.com",
-    projectId: "coins-d284d",
-    storageBucket: "coins-d284d.firebasestorage.app",
-    messagingSenderId: "261873801666",
-    appId: "1:261873801666:web:516f1bf88de4a8ddd29e5b",
-    measurementId: "G-MQ5GG8NFH9"
-  };
-
-  // Инициализация Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
+<script>
   let coins = 0;
   let autoClickers = 0;
   let upgradeCost = 100;
-  const userId = "user_" + Math.random().toString(36).substring(2); // Генерируем ID
 
   // Элементы интерфейса
   const coinsDisplay = document.getElementById("coins");
   const upgradeCostDisplay = document.getElementById("upgradeCost");
   const autoClickersDisplay = document.getElementById("autoClickers");
 
-  // Загрузка данных
-  async function loadData() {
-    const docRef = doc(db, "users", userId);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      coins = data.coins || 0;
-      autoClickers = data.autoClickers || 0;
-      upgradeCost = data.upgradeCost || 100;
-      updateUI();
+  // Загрузка данных из LocalStorage
+  function loadData() {
+    const savedCoins = localStorage.getItem('coins');
+    const savedAutoClickers = localStorage.getItem('autoClickers');
+    const savedUpgradeCost = localStorage.getItem('upgradeCost');
+
+    if (savedCoins) {
+      coins = parseInt(savedCoins);
     }
+    if (savedAutoClickers) {
+      autoClickers = parseInt(savedAutoClickers);
+    }
+    if (savedUpgradeCost) {
+      upgradeCost = parseInt(savedUpgradeCost);
+    }
+    updateUI();
   }
 
-  // Сохранение данных
-  async function saveData() {
-    await setDoc(doc(db, "users", userId), {
-      coins,
-      autoClickers,
-      upgradeCost,
-      lastUpdate: new Date()
-    });
+  // Сохранение данных в LocalStorage
+  function saveData() {
+    localStorage.setItem('coins', coins);
+    localStorage.setItem('autoClickers', autoClickers);
+    localStorage.setItem('upgradeCost', upgradeCost);
   }
 
   // Покупка улучшения
-  async function buyUpgrade() {
+  function buyUpgrade() {
     if (coins >= upgradeCost) {
       coins -= upgradeCost;
       autoClickers++;
       upgradeCost = Math.floor(upgradeCost * 1.10); // +10%
-      await saveData();
+      saveData();
       updateUI();
       alert("Улучшение куплено!");
     } else {
@@ -122,19 +103,19 @@
   }
 
   // Автокликеры
-  setInterval(async () => {
+  setInterval(() => {
     if (autoClickers > 0) {
       coins += autoClickers;
       updateUI();
-      await saveData();
+      saveData();
     }
   }, 1000);
 
   // Инициализация
-  document.getElementById("clickBtn").addEventListener("click", async () => {
+  document.getElementById("clickBtn").addEventListener("click", () => {
     coins++;
     updateUI();
-    await saveData(); // Сохраняем данные после каждого клика
+    saveData(); // Сохраняем данные после каждого клика
   });
 
   document.getElementById("buyBtn").addEventListener("click", buyUpgrade);
