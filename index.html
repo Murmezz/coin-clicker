@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coin Clicker</title>
-    
+
     <!-- Стили -->
     <style>
         body {
@@ -31,131 +31,151 @@
             display: block;
             margin: 10px auto; /* Центрируем кнопки */
         }
+        #improvementsContainer {
+            display: none; /* Скрываем контейнер улучшений изначально */
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <!-- Интерфейс игры -->
     <h1>🪙Кликай чмо😄</h1>
-   
+
     <div class="stats">
-        <p> <span id="coins">0</span> 🪙</p>
+        <p><span id="coins">0</span> 🪙</p>
         <p>Автокликеры: <span id="autoClickers">0</span> ⚡</p>
         <p>Стоимость улучшения: <span id="upgradeCost">100</span> 🪙</p>
     </div>
 
     <!-- Кнопки -->
     <button id="clickBtn" class="main-btn" style="background-image: url('https://i.postimg.cc/26p0HxSH/1000048693.png'); background-size: cover; width: 300px; height: 300px; border: none;">
-    <span style="display:none;">ТАПАТЬ!</span> <!-- Скрываем текст -->
+        <span style="display:none;">ТАПАТЬ!</span> <!-- Скрываем текст -->
     </button>
 
     <button id="buyBtn" class="upgrade-btn">Купить автокликер (<span id="upgradeCost"/span>)</button>
+    <button id="openImprovementsBtn" class="main-btn">Улучшения</button>
 
-    <!-- Кнопки для улучшений -->
-    <div id="improvements">
-        <!-- Кнопки улучшений будут добавлены сюда через JS -->
+    <!-- Контейнер для улучшений -->
+    <div id="improvementsContainer">
+        <h2>Улучшения</h2>
+        <div id="improvements"></div>
+        <button id="closeImprovementsBtn" class="main-btn">Закрыть</button>
     </div>
 
     <!-- ОТСЮДА НАЧИНАЕТСЯ СКРИПТ -->
     <script>
-      let coins = 0;
-      let autoClickers = 0;
-      let upgradeCost = 100;
-      let improvements = []; // Хранить улучшения
-      
-      // Элементы интерфейса
-      const coinsDisplay = document.getElementById("coins");
-      const upgradeCostDisplay = document.getElementById("upgradeCost");
-      const autoClickersDisplay = document.getElementById("autoClickers");
-      const improvementsContainer = document.getElementById("improvements");
+        let coins = 0;
+        let autoClickers = 0;
+        let upgradeCost = 100;
+        let enhancements = []; // Храненных улучшений
 
-      // Загрузка данных из LocalStorage
-      function loadData() {
-        const savedCoins = localStorage.getItem('coins');
-        const savedAutoClickers = localStorage.getItem('autoClickers');
+        // Элементы интерфейса
+        const coinsDisplay = document.getElementById("coins");
+        const upgradeCostDisplay = document.getElementById("upgradeCost");
+        const autoClickersDisplay = document.getElementById("autoClickers");
+        const improvementsContainer = document.getElementById("improvementsContainer");
+        const improvementsList = document.getElementById("improvements");
 
-        if (savedCoins) {
-          coins = parseInt(savedCoins);
+        // Загрузка данных из LocalStorage
+        function loadData() {
+            const savedCoins = localStorage.getItem('coins');
+            const savedAutoClickers = localStorage.getItem('autoClickers');
+
+            if (savedCoins) {
+                coins = parseInt(savedCoins);
+            }
+            if (savedAutoClickers) {
+                autoClickers = parseInt(savedAutoClickers);
+            }
+            updateUI();
         }
-        if (savedAutoClickers) {
-          autoClickers = parseInt(savedAutoClickers);
+
+        // Сохранение данных в LocalStorage
+        function saveData() {
+            localStorage.setItem('coins', coins);
+            localStorage.setItem('autoClickers', autoClickers);
         }
-        updateUI();
-      }
 
-      // Сохранение данных в LocalStorage
-      function saveData() {
-        localStorage.setItem('coins', coins);
-        localStorage.setItem('autoClickers', autoClickers);
-      }
-      
-      // Инициализация улучшений
-      function initImprovements() {
-          for (let i = 1; i <= 10; i++) {
-              const cost = 200 * Math.pow(1.2, i - 1); // Начальная стоимость 200, +20% каждая
-              const coinsPerSecond = 2 * i; // Каждое улучшение дает 2*i коинов в секунду
-              improvements.push({ cost: Math.floor(cost), coinsPerSecond });
-              const button = document.createElement('button');
-              button.classList.add('upgrade-btn');
-              button.textContent = `Купить улучшение ${i} (${Math.floor(cost)} 🪙)`;
-              button.addEventListener('click', () => buyImprovement(i - 1));
-              improvementsContainer.appendChild(button);
-          }
-      }
+        // Инициализация улучшений
+        function initImprovements() {
+            for (let i = 1; i <= 10; i++) {
+                const cost = 200 * Math.pow(2, i - 1); // Начальная стоимость 200, удваивается
+                const coinsPerSecond = 2 * Math.pow(2, i - 1); // Каждое улучшение дает 2 * 2^(i-1) коинов в секунду
+                enhancements.push({ cost: Math.floor(cost), coinsPerSecond, purchased: 0 });
 
-      // Покупка улучшения
-      function buyImprovement(index) {
-          const improvement = improvements[index];
-          if (coins >= improvement.cost) {
-              coins -= improvement.cost;
-              autoClickers += improvement.coinsPerSecond;
-              improvement.cost = Math.floor(improvement.cost * 1.2); // увеличиваем стоимость на 20%
-              saveData();
-              updateUI();
-              // Обновляем текст кнопки
-              const button = improvementsContainer.children[index];
-              button.textContent = `Купить улучшение ${index + 1} (${improvement.cost} 🪙)`;
-          } else {
-              alert("Недостаточно коинов для покупки улучшения!");
-          }
-      }
-
-      // Обновление интерфейса
-      function updateUI() {
-        coinsDisplay.textContent = coins;
-        upgradeCostDisplay.textContent = upgradeCost;
-        autoClickersDisplay.textContent = autoClickers;
-      }
-
-      // Автокликеры
-      setInterval(() => {
-        if (autoClickers > 0) {
-          coins += autoClickers;
-          updateUI();
-          saveData();
+                const button = document.createElement('button');
+                button.classList.add('upgrade-btn');
+                button.textContent = `Улучшение ${i} - Стоимость: ${Math.floor(cost)} 🪙`;
+                button.addEventListener('click', () => buyImprovement(i - 1));
+                improvementsList.appendChild(button);
+            }
         }
-      }, 1000);
 
-      // Инициализация
-      document.getElementById("clickBtn").addEventListener("click", () => {
-        coins++;
-        updateUI();
-        saveData(); // Сохраняем данные после каждого клика
-      });
+        // Покупка улучшения
+        function buyImprovement(index) {
+            const improvement = enhancements[index];
+            if (coins >= improvement.cost) {
+                coins -= improvement.cost;
+                autoClickers += improvement.coinsPerSecond;
+                improvement.cost = Math.floor(improvement.cost * 1.1); // увеличиваем стоимость на 10%
+                improvement.purchased++; // Увеличиваем количество покупок
 
-      document.getElementById("buyBtn").addEventListener("click", () => {
-          if (coins >= upgradeCost) {
-              coins -= upgradeCost;
-              autoClickers++;
-              upgradeCost = Math.floor(upgradeCost * 1.1); // +10% для основного улучшения
-              saveData();
-              updateUI();
-          } else {
-              alert("Недостаточно коинов!");
-          }
-      });
-      
-      loadData(); // Первая загрузка данных
-      initImprovements(); // Инициализация улучшений
+                saveData();
+                updateUI();
+
+                // Обновляем текст кнопки
+                const button = improvementsList.children[index];
+                button.textContent = `Улучшение ${index + 1} - Стоимость: ${improvement.cost} 🪙`;
+            } else {
+                alert("Недостаточно коинов для покупки улучшения!");
+            }
+        }
+
+        // Обновление интерфейса
+        function updateUI() {
+            coinsDisplay.textContent = coins;
+            upgradeCostDisplay.textContent = upgradeCost;
+            autoClickersDisplay.textContent = autoClickers;
+        }
+
+        // Автокликеры
+        setInterval(() => {
+            if (autoClickers > 0) {
+                coins += autoClickers;
+                updateUI();
+                saveData();
+            }
+        }, 1000);
+
+        // Инициализация
+        document.getElementById("clickBtn").addEventListener("click", () => {
+            coins++;
+            updateUI();
+            saveData(); // Сохраняем данные после каждого клика
+        });
+
+        document.getElementById("buyBtn").addEventListener("click", () => {
+            if (coins >= upgradeCost) {
+                coins -= upgradeCost;
+                autoClickers++;
+                upgradeCost = Math.floor(upgradeCost * 1.1); // +10% для основного улучшения
+                saveData();
+                updateUI();
+            } else {
+                alert("Недостаточно коинов!");
+            }
+        });
+
+        document.getElementById("openImprovementsBtn").addEventListener("click", () => {
+            improvementsContainer.style.display = "block"; // Показываем меню улучшений
+        });
+
+        document.getElementById("closeImprovementsBtn").addEventListener("click", () => {
+            improvementsContainer.style.display = "none"; // Скрываем меню улучшений
+        });
+
+        loadData(); // Первая загрузка данных
+        initImprovements(); // Инициализация улучшений
     </script>
 </body>
 </html>
