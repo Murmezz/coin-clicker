@@ -46,47 +46,39 @@
     <button id="buyBtn" class="upgrade-btn">Купить автокликер (<span id="upgradeCost">100</span>)</button>
 
     <!-- ОТСЮДА НАЧИНАЕТСЯ СКРИПТ -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-  const supabaseUrl = 'https://jlzilonnqylwtkhnmkzo.supabase.co'; // Замените на ваш URL
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impsemlsb25ucXlsd3RraG5ta3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ3MDYwMDUsImV4cCI6MjA2MDI4MjAwNX0.lSuHcwFUcOJ-kLj8iB1u8ASDlz-4IjVD3HV2drCbwVk'; // Замените на ваш анонимный ключ
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-  let coins = 0;
+  let coins = 1000000;
   let autoClickers = 0;
   let upgradeCost = 100;
-  const userId = 'user_' + Math.random().toString(36).substring(2); // Генерируем ID
 
   // Элементы интерфейса
   const coinsDisplay = document.getElementById("coins");
   const upgradeCostDisplay = document.getElementById("upgradeCost");
   const autoClickersDisplay = document.getElementById("autoClickers");
 
-  // Загрузка данных из Supabase
-  async function loadData() {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+  // Загрузка данных из LocalStorage
+  function loadData() {
+    const savedCoins = localStorage.getItem('coins');
+    const savedAutoClickers = localStorage.getItem('autoClickers');
+    const savedUpgradeCost = localStorage.getItem('upgradeCost');
 
-    if (data) {
-      coins = data.coins || 0;
-      autoClickers = data.autoClickers || 0;
-      upgradeCost = data.upgradeCost || 100;
-      updateUI();
+    if (savedCoins) {
+      coins = parseInt(savedCoins);
     }
+    if (savedAutoClickers) {
+      autoClickers = parseInt(savedAutoClickers);
+    }
+    if (savedUpgradeCost) {
+      upgradeCost = parseInt(savedUpgradeCost);
+    }
+    updateUI();
   }
 
-  // Сохранение данных в Supabase
-  async function saveData() {
-    const { data, error } = await supabase
-      .from('users')
-      .upsert({ id: userId, coins: BigInt(coins), autoClickers: BigInt(autoClickers), upgradeCost: BigInt(upgradeCost) });
-
-    if (error) {
-      console.error('Error saving data: ', error);
-    }
+  // Сохранение данных в LocalStorage
+  function saveData() {
+    localStorage.setItem('coins', coins);
+    localStorage.setItem('autoClickers', autoClickers);
+    localStorage.setItem('upgradeCost', upgradeCost);
   }
 
   // Покупка улучшения
