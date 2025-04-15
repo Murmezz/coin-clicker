@@ -9,16 +9,36 @@ let highscore = localStorage.getItem('highscore') || 0;
 coinsDisplay.textContent = coins;
 highscoreDisplay.textContent = highscore;
 
-coinContainer.addEventListener('click', function(e) {
+coinContainer.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    
     const rect = this.getBoundingClientRect();
     const radius = rect.width / 2;
     const centerX = rect.left + radius;
     const centerY = rect.top + radius;
     
-    // Вычисляем направление наклона (в ту же сторону, куда кликнули)
+    // Вычисляем направление наклона
     const relX = (e.clientX - centerX) / radius;
     const relY = (e.clientY - centerY) / radius;
     
+    // Анимация наклона
+    const coinButton = this.querySelector('.coin-button');
+    const tiltAngle = 12;
+    coinButton.style.transform = `
+        perspective(500px) 
+        rotateX(${relY * tiltAngle}deg) 
+        rotateY(${-relX * tiltAngle}deg) 
+        scale(0.95)
+    `;
+});
+
+coinContainer.addEventListener('mouseup', function() {
+    const coinButton = this.querySelector('.coin-button');
+    
+    // Возврат в исходное положение
+    coinButton.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
+    
+    // Увеличиваем счётчик
     coins++;
     coinsDisplay.textContent = coins;
     
@@ -30,37 +50,24 @@ coinContainer.addEventListener('click', function(e) {
     }
     
     localStorage.setItem('coins', coins);
-    
-    // Анимация наклона
-    const coinButton = this.querySelector('.coin-button');
-    const tiltAngle = 12;
-    coinButton.style.transform = `
-        perspective(500px) 
-        rotateX(${relY * tiltAngle}deg) 
-        rotateY(${-relX * tiltAngle}deg) 
-        scale(0.95)
-    `;
-    
-    setTimeout(() => {
-        coinButton.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
-    }, 200);
 });
 
-// Полная блокировка действий по умолчанию
-coinContainer.addEventListener('contextmenu', (e) => {
+// Для мобильных устройств
+coinContainer.addEventListener('touchstart', function(e) {
     e.preventDefault();
-    return false;
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+    });
+    this.dispatchEvent(mouseEvent);
 });
 
-coinContainer.addEventListener('mousedown', (e) => {
+coinContainer.addEventListener('touchend', function(e) {
     e.preventDefault();
-    return false;
+    this.dispatchEvent(new MouseEvent('mouseup'));
 });
 
-coinContainer.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    return false;
-});
-
-// Сброс прогресса
-console.log("Сбросить прогресс: localStorage.clear()");
+// Блокировка нежелательных действий
+coinContainer.addEventListener('contextmenu', (e) => e.preventDefault());
+coinContainer.addEventListener('dragstart', (e) => e.preventDefault());
