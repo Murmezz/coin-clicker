@@ -1,0 +1,42 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f0f8ff;
+    padding: 20px;
+}
+
+#coins {
+    font-size: 48px;
+    margin: 20px;
+    font-weight: bold;
+}
+
+#clickBtn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 15px 32px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+#clickBtn:active {
+    transform: scale(0.95);
+}
+
+.upgrade-btn {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.upgrade-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
