@@ -1,72 +1,35 @@
-body {
-    font-family: 'Arial', sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-}
+/* Все предыдущие стили остаются */
 
-.container {
-    text-align: center;
-    background: white;
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    max-width: 500px;
-}
-
-.balance {
-    font-size: 24px;
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.coin-container {
-    width: 300px;
-    height: 300px;
-    margin: 0 auto;
-    position: relative;
-    cursor: pointer;
-    border-radius: 50%;
-    overflow: hidden;
-}
-
-.coin-button {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
-    background-size: cover;
-    background-position: center;
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease;
-    position: relative;
-}
-
-.coin-button::after {
-    content: '';
+.floating-numbers {
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
     border-radius: 50%;
-    background: rgba(0,0,0,0.1);
-    opacity: 0;
-    transition: opacity 0.2s;
 }
 
-.coin-container:active .coin-button::after {
+.floating-number {
+    position: absolute;
+    color: gold;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
     opacity: 1;
+    transform: translateY(0);
+    animation: floatNumber 1s ease-out forwards;
+    user-select: none;
 }
 
-.stats {
-    margin-top: 20px;
-    font-size: 18px;
-    color: #555;
+@keyframes floatNumber {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--target-x), var(--target-y));
+    }
 }
