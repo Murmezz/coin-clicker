@@ -18,8 +18,8 @@ coinContainer.addEventListener('mousedown', function(e) {
     const centerY = rect.top + radius;
     
     // Вычисляем направление наклона
-    const relX = (e.clientX - centerX) / radius;
-    const relY = (e.clientY - centerY) / radius;
+    const relX = (centerX - e.clientX) / radius;
+    const relY = (centerY - e.clientY) / radius;
     
     // Анимация наклона
     const coinButton = this.querySelector('.coin-button');
