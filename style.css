@@ -26,23 +26,28 @@ body {
     color: #333;
 }
 
-.coin-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
+.coin-container {
     width: 300px;
     height: 300px;
     margin: 0 auto;
-    display: block;
-    outline: none;
     position: relative;
-    overflow: hidden;
-    border-radius: 50%;
-    -webkit-mask-image: -webkit-radial-gradient(white, black); /* Фикс для Safari */
+    cursor: pointer;
 }
 
-.coin-button::before {
+.coin-button {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.coin-button::after {
     content: '';
     position: absolute;
     top: 0;
@@ -50,17 +55,13 @@ body {
     right: 0;
     bottom: 0;
     border-radius: 50%;
-    pointer-events: none;
+    background: rgba(0,0,0,0.1);
+    opacity: 0;
+    transition: opacity 0.2s;
 }
 
-.coin-image {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease;
-    object-fit: cover;
-    display: block;
+.coin-container:active .coin-button::after {
+    opacity: 1;
 }
 
 .stats {
