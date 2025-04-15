@@ -10,13 +10,16 @@
 <body>
     <div class="container">
         <h1>💰 Coin Clicker</h1>
-        <div id="coins">0</div>
-        <button id="clickBtn">TAP ME!</button>
+        <div class="stats">
+            <p>Кошелек: <span id="coins">0</span> коинов</p>
+            <p>Доход: <span id="autoIncome">0</span>/сек</p>
+        </div>
+        <button id="clickBtn">Тапни меня!</button>
         
         <h2>⚡ Upgrades</h2>
         <div class="upgrades">
-            <button class="upgrade-btn" data-cost="100" data-income="1">
-                +1 Coin/sec (100 coins)
+            <button id="upgradeBtn" onclick="buyUpgrade()">
+                Улучшить (+1/сек) - <span id="upgradeCost">100</span> коинов
             </button>
         </div>
     </div>
