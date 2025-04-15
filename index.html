@@ -28,6 +28,8 @@
             color: white; /* Цвет текста кнопки улучшения белый */
             border: none;
             border-radius: 5px;
+            display: block;
+            margin: 10px auto; /* Центрируем кнопки */
         }
     </style>
 </head>
@@ -44,89 +46,116 @@
     <!-- Кнопки -->
     <button id="clickBtn" class="main-btn" style="background-image: url('https://i.postimg.cc/26p0HxSH/1000048693.png'); background-size: cover; width: 300px; height: 300px; border: none;">
     <span style="display:none;">ТАПАТЬ!</span> <!-- Скрываем текст -->
-</button>
+    </button>
 
     <button id="buyBtn" class="upgrade-btn">Купить автокликер (<span id="upgradeCost"/span>)</button>
 
+    <!-- Кнопки для улучшений -->
+    <div id="improvements">
+        <!-- Кнопки улучшений будут добавлены сюда через JS -->
+    </div>
+
     <!-- ОТСЮДА НАЧИНАЕТСЯ СКРИПТ -->
-<script>
-  let coins = 1000000;
-  let autoClickers = 0;
-  let upgradeCost = 100;
+    <script>
+      let coins = 0;
+      let autoClickers = 0;
+      let upgradeCost = 100;
+      let improvements = []; // Хранить улучшения
+      
+      // Элементы интерфейса
+      const coinsDisplay = document.getElementById("coins");
+      const upgradeCostDisplay = document.getElementById("upgradeCost");
+      const autoClickersDisplay = document.getElementById("autoClickers");
+      const improvementsContainer = document.getElementById("improvements");
 
-  // Элементы интерфейса
-  const coinsDisplay = document.getElementById("coins");
-  const upgradeCostDisplay = document.getElementById("upgradeCost");
-  const autoClickersDisplay = document.getElementById("autoClickers");
+      // Загрузка данных из LocalStorage
+      function loadData() {
+        const savedCoins = localStorage.getItem('coins');
+        const savedAutoClickers = localStorage.getItem('autoClickers');
 
-  // Загрузка данных из LocalStorage
-  function loadData() {
-    const savedCoins = localStorage.getItem('coins');
-    const savedAutoClickers = localStorage.getItem('autoClickers');
-    const savedUpgradeCost = localStorage.getItem('upgradeCost');
-
-    if (savedCoins) {
-      coins = parseInt(savedCoins);
-    }
-    if (savedAutoClickers) {
-      autoClickers = parseInt(savedAutoClickers);
-    }
-    if (savedUpgradeCost) {
-      upgradeCost = parseInt(savedUpgradeCost);
-    }
-    updateUI();
-  }
-
-  // Сохранение данных в LocalStorage
-  function saveData() {
-    localStorage.setItem('coins', coins);
-    localStorage.setItem('autoClickers', autoClickers);
-    localStorage.setItem('upgradeCost', upgradeCost);
-  }
-
-  // Покупка улучшения
-  // Покупка улучшения
-function buyUpgrade() {
-    if (coins >= upgradeCost) {
-        coins -= upgradeCost;
-        autoClickers++;
-        upgradeCost = Math.floor(upgradeCost * 1.10); // +10%
-        saveData();
+        if (savedCoins) {
+          coins = parseInt(savedCoins);
+        }
+        if (savedAutoClickers) {
+          autoClickers = parseInt(savedAutoClickers);
+        }
         updateUI();
-        // Уберите строку с alert
-        // alert("Улучшение куплено!");
-    } else {
-        alert("Недостаточно коинов!");
-    }
-}
+      }
 
+      // Сохранение данных в LocalStorage
+      function saveData() {
+        localStorage.setItem('coins', coins);
+        localStorage.setItem('autoClickers', autoClickers);
+      }
+      
+      // Инициализация улучшений
+      function initImprovements() {
+          for (let i = 1; i <= 10; i++) {
+              const cost = 200 * Math.pow(1.2, i - 1); // Начальная стоимость 200, +20% каждая
+              const coinsPerSecond = 2 * i; // Каждое улучшение дает 2*i коинов в секунду
+              improvements.push({ cost: Math.floor(cost), coinsPerSecond });
+              const button = document.createElement('button');
+              button.classList.add('upgrade-btn');
+              button.textContent = `Купить улучшение ${i} (${Math.floor(cost)} 🪙)`;
+              button.addEventListener('click', () => buyImprovement(i - 1));
+              improvementsContainer.appendChild(button);
+          }
+      }
 
-  // Обновление интерфейса
-  function updateUI() {
-    coinsDisplay.textContent = coins;
-    upgradeCostDisplay.textContent = upgradeCost;
-    autoClickersDisplay.textContent = autoClickers;
-  }
+      // Покупка улучшения
+      function buyImprovement(index) {
+          const improvement = improvements[index];
+          if (coins >= improvement.cost) {
+              coins -= improvement.cost;
+              autoClickers += improvement.coinsPerSecond;
+              improvement.cost = Math.floor(improvement.cost * 1.2); // увеличиваем стоимость на 20%
+              saveData();
+              updateUI();
+              // Обновляем текст кнопки
+              const button = improvementsContainer.children[index];
+              button.textContent = `Купить улучшение ${index + 1} (${improvement.cost} 🪙)`;
+          } else {
+              alert("Недостаточно коинов для покупки улучшения!");
+          }
+      }
 
-  // Автокликеры
-  setInterval(() => {
-    if (autoClickers > 0) {
-      coins += autoClickers;
-      updateUI();
-      saveData();
-    }
-  }, 1000);
+      // Обновление интерфейса
+      function updateUI() {
+        coinsDisplay.textContent = coins;
+        upgradeCostDisplay.textContent = upgradeCost;
+        autoClickersDisplay.textContent = autoClickers;
+      }
 
-  // Инициализация
-  document.getElementById("clickBtn").addEventListener("click", () => {
-    coins++;
-    updateUI();
-    saveData(); // Сохраняем данные после каждого клика
-  });
+      // Автокликеры
+      setInterval(() => {
+        if (autoClickers > 0) {
+          coins += autoClickers;
+          updateUI();
+          saveData();
+        }
+      }, 1000);
 
-  document.getElementById("buyBtn").addEventListener("click", buyUpgrade);
-  
-  loadData(); // Первая загрузка данных
-</script>
+      // Инициализация
+      document.getElementById("clickBtn").addEventListener("click", () => {
+        coins++;
+        updateUI();
+        saveData(); // Сохраняем данные после каждого клика
+      });
+
+      document.getElementById("buyBtn").addEventListener("click", () => {
+          if (coins >= upgradeCost) {
+              coins -= upgradeCost;
+              autoClickers++;
+              upgradeCost = Math.floor(upgradeCost * 1.1); // +10% для основного улучшения
+              saveData();
+              updateUI();
+          } else {
+              alert("Недостаточно коинов!");
+          }
+      });
+      
+      loadData(); // Первая загрузка данных
+      initImprovements(); // Инициализация улучшений
+    </script>
 </body>
 </html>
