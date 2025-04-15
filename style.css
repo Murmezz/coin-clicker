@@ -36,9 +36,21 @@ body {
     margin: 0 auto;
     display: block;
     outline: none;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+    -webkit-mask-image: -webkit-radial-gradient(white, black); /* Фикс для Safari */
+}
+
+.coin-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .coin-image {
@@ -48,7 +60,7 @@ body {
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease;
     object-fit: cover;
-    pointer-events: none;
+    display: block;
 }
 
 .stats {
