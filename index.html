@@ -4,25 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coin Clicker</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Стили -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .main-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            margin: 10px;
+        }
+        .upgrade-btn {
+            padding: 10px 20px;
+            background: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🪙Коин Кликер🪙</h1>
-        <div class="stats">
-            <p>Кошелек: <span id="coins">0</span> коинов</p>
-            <p>Доход: <span id="autoIncome">0</span>/сек</p>
-        </div>
-        <button id="clickBtn">Тапни меня!</button>
-        
-        <h2>⚡ Upgrades</h2>
-        <div class="upgrades">
-            <button id="upgradeBtn" onclick="buyUpgrade()">
-                Улучшить (+1/сек) - <span id="upgradeCost">100</span> коинов
-            </button>
-        </div>
+    <!-- Интерфейс игры -->
+    <h1>💰 Coin Clicker</h1>
+    
+    <div class="stats">
+        <p>Кошелек: <span id="coins">0</span> 🪙</p>
+        <p>Автокликеры: <span id="autoClickers">0</span> ⚡</p>
+        <p>Стоимость улучшения: <span id="upgradeCost">100</span> 🪙</p>
     </div>
-    <script src="script.js"></script>
+
+    <!-- Кнопки -->
+    <button id="clickBtn" class="main-btn">ТАПАТЬ!</button>
+    <button id="buyBtn" class="upgrade-btn">Купить автокликер (<span id="upgradeCost">100</span>)</button>
+
+    <!-- ОТСЮДА НАЧИНАЕТСЯ СКРИПТ -->
+    <script type="module">
+        // Вставьте ВЕСЬ код из предыдущего ответа с Firebase ЗДЕСЬ
+    </script>
 </body>
 </html>
