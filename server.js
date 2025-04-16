@@ -1,98 +1,73 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+import { createClient } from '@supabase/supabase-js';
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json());
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Временная "база данных"
-let users = {
-    'user_1': { balance: 1000, highscore: 0, transfers: [] },
-    'user_2': { balance: 500, highscore: 0, transfers: [] },
-    'user_3': { balance: 200, highscore: 0, transfers: [] }
-};
+export default async function handler(req, res) {
+  const { method } = req;
+  if (method === 'GET') {
+    // Пример: получить пользователя по username из query
+    const username = req.query.username;
+    if (!username) return res.status(400).json({ error: 'Username required' });
 
-// Имитация базы пользователей
-const userDatabase = {
-    '@user1': 'user_1',
-    '@user2': 'user_2',
-    '@user3': 'user_3'
-};
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
 
-// API endpoints
-app.get('/user/:id', (req, res) => {
-    const userId = req.params.id;
-    if (!users[userId]) {
-        // Создаем пользователя с дефолтным балансом
-        users[userId] = { balance: 100, highscore: 0, transfers: [] };
-    }
-    res.json(users[userId]);
-});
+    if (error) return res.status(404).json({ error: 'User not found' });
 
-app.put('/user/:id', (req, res) => {
-    const userId = req.params.id;
-    if (!users[userId]) {
-        users[userId] = { balance: 100, highscore: 0, transfers: [] };
-    }
-    // Обновляем только нужные поля, чтобы не перезаписать целиком
-    const { balance, highscore, transfers } = req.body;
-    users[userId].balance = balance ?? users[userId].balance;
-    users[userId].highscore = highscore ?? users[userId].highscore;
-    users[userId].transfers = transfers ?? users[userId].transfers;
-
-    res.json({ success: true });
-});
-
-app.post('/transfer', (req, res) => {
-    const { senderId, recipientUsername, amount } = req.body;
-
-    // Проверка получателя
-    if (!userDatabase[recipientUsername]) {
-        return res.json({ success: false, message: 'Пользователь не найден' });
+    res.status(200).json(data);
+  } else if (method === 'POST') {
+    // Пример: перевод коинов
+    const { senderUsername, recipientUsername, amount } = req.body;
+    if (!senderUsername || !recipientUsername || !amount) {
+      return res.status(400).json({ error: 'Missing parameters' });
     }
 
-    const recipientId = userDatabase[recipientUsername];
+    // Здесь логика перевода: проверить балансы, обновить, добавить запись в transfers
+    // Для простоты — пример без транзакций (лучше добавить транзакции в реальном проекте)
 
-    // Проверка отправителя и баланса
-    if (!users[senderId]) {
-        return res.json({ success: false, message: 'Отправитель не найден' });
+    const { data: sender, error: senderError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', senderUsername)
+      .single();
+
+    if (senderError || sender.balance < amount) {
+      return res.status(400).json({ error: 'Недостаточно средств или отправитель не найден' });
     }
-    if (users[senderId].balance < amount) {
-        return res.json({ success: false, message: 'Недостаточно средств' });
+
+    const { data: recipient, error: recipientError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', recipientUsername)
+      .single();
+
+    if (recipientError) {
+      return res.status(400).json({ error: 'Получатель не найден' });
     }
 
     // Обновляем балансы
-    users[senderId].balance -= amount;
-    users[recipientId] = users[recipientId] || { balance: 100, highscore: 0, transfers: [] };
-    users[recipientId].balance += amount;
+    await supabase
+      .from('users')
+      .update({ balance: sender.balance - amount })
+      .eq('username', senderUsername);
 
-    // Добавляем в историю отправителя
-    const transferData = {
-        type: 'outgoing',
-        username: recipientUsername,
-        amount: amount,
-        date: new Date().toISOString()
-    };
+    await supabase
+      .from('users')
+      .update({ balance: recipient.balance + amount })
+      .eq('username', recipientUsername);
 
-    users[senderId].transfers = users[senderId].transfers || [];
-    users[senderId].transfers.unshift(transferData);
+    // Добавляем запись в transfers
+    await supabase
+      .from('transfers')
+      .insert([{ sender_username: senderUsername, recipient_username: recipientUsername, amount, created_at: new Date().toISOString() }]);
 
-    // Добавляем в историю получателя
-    const incomingTransfer = {
-        type: 'incoming',
-        username: '@' + senderId,
-        amount: amount,
-        date: new Date().toISOString()
-    };
-
-    users[recipientId].transfers = users[recipientId].transfers || [];
-    users[recipientId].transfers.unshift(incomingTransfer);
-
-    res.json({ success: true });
-});
-
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+    res.status(200).json({ success: true });
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
+  }
+}
