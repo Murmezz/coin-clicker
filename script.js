@@ -1,17 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Конфигурация
-    const API_URL = 'http://localhost:3000'; // Замените на ваш сервер
-    const USER_ID = 'user_' + Math.random().toString(36).substr(2, 9); // В реальном приложении получать из авторизации
-    
+    const API_URL = 'http://localhost:3000'; // Ваш сервер
+    const USER_ID = 'user_1'; // Для теста, должен быть в userDatabase и users
+
     // Элементы интерфейса
     const coinContainer = document.getElementById('coin');
     const coinsDisplay = document.getElementById('coins');
     const highscoreDisplay = document.getElementById('highscore');
     const pagesContainer = document.getElementById('pages-container');
-    const transferPage = document.getElementById('transfer-page');
-    const defaultPage = document.getElementById('default-page');
-    const historyList = document.getElementById('history-list');
-    
+    const transferPageTemplate = document.getElementById('transfer-page');
+    const defaultPageTemplate = document.getElementById('default-page');
+
     // Данные пользователя
     let coins = 0;
     let highscore = 0;
@@ -21,23 +20,30 @@ document.addEventListener('DOMContentLoaded', function() {
     loadUserData();
     initEventListeners();
 
-    // Загрузка данных пользователя
+    // Загрузка данных пользователя с сервера
     async function loadUserData() {
         try {
             const response = await fetch(`${API_URL}/user/${USER_ID}`);
             const data = await response.json();
-            
-            coins = data.balance;
-            highscore = data.highscore;
-            transferHistory = data.transfers || [];
-            
+
+            // Если пользователя нет на сервере, создаём с дефолтными значениями
+            if (!data || typeof data.balance !== 'number') {
+                coins = 100;
+                highscore = 0;
+                transferHistory = [];
+                await saveUserData(); // Сохраняем на сервер
+            } else {
+                coins = data.balance;
+                highscore = data.highscore || 0;
+                transferHistory = data.transfers || [];
+            }
+
             updateDisplays();
             renderTransferHistory();
         } catch (error) {
             console.error('Ошибка загрузки данных:', error);
-            // Запасной вариант из localStorage
-            coins = parseInt(localStorage.getItem('coins')) || 100;
-            highscore = parseInt(localStorage.getItem('highscore')) || 0;
+            coins = 100;
+            highscore = 0;
             updateDisplays();
         }
     }
@@ -46,8 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateDisplays() {
         coinsDisplay.textContent = coins;
         highscoreDisplay.textContent = highscore;
-        localStorage.setItem('coins', coins);
-        localStorage.setItem('highscore', highscore);
     }
 
     // Обработчики событий
@@ -55,10 +59,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Клик по монете
         coinContainer.addEventListener('mousedown', handleCoinPress);
         coinContainer.addEventListener('touchstart', handleTouchStart);
-        
+
         coinContainer.addEventListener('mouseup', handleCoinRelease);
         coinContainer.addEventListener('touchend', handleTouchEnd);
-        
+
         // Навигация
         document.querySelectorAll('.nav-button').forEach(button => {
             button.addEventListener('click', function() {
@@ -72,18 +76,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Логика монеты
     function handleCoinPress(e) {
         e.preventDefault();
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
-        
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+        if (clientX === undefined || clientY === undefined) return;
+
         const rect = coinContainer.getBoundingClientRect();
         const clickX = clientX - rect.left;
         const clickY = clientY - rect.top;
-        
+
         const coinButton = coinContainer.querySelector('.coin-button');
         const tiltAngle = 12;
         const relX = (rect.width/2 - clickX) / (rect.width/2);
         const relY = (rect.height/2 - clickY) / (rect.height/2);
-        
+
         coinButton.style.transform = `
             perspective(500px) 
             rotateX(${relY * tiltAngle}deg) 
@@ -93,17 +99,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleCoinRelease(e) {
-        const clientX = e.clientX || e.changedTouches[0].clientX;
-        const clientY = e.clientY || e.changedTouches[0].clientY;
-        
+        const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
+        const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+
+        if (clientX === undefined || clientY === undefined) return;
+
         const coinButton = coinContainer.querySelector('.coin-button');
         coinButton.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
-        
+
         coins++;
         if (coins > highscore) {
             highscore = coins;
         }
-        
+
         updateDisplays();
         createFloatingNumber(clientX, clientY);
         saveUserData();
@@ -124,18 +132,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const numberElement = document.createElement('div');
         numberElement.className = 'floating-number';
         numberElement.textContent = '+1';
-        
+
         const balanceRect = document.querySelector('.balance').getBoundingClientRect();
         const targetX = balanceRect.left + balanceRect.width/2 - startX;
         const targetY = balanceRect.top - startY;
-        
+
         numberElement.style.left = `${startX}px`;
         numberElement.style.top = `${startY}px`;
         numberElement.style.setProperty('--target-x', `${targetX}px`);
         numberElement.style.setProperty('--target-y', `${targetY}px`);
-        
+
         document.body.appendChild(numberElement);
-        
+
         setTimeout(() => {
             numberElement.remove();
         }, 700);
@@ -144,22 +152,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Навигация по страницам
     function showTransferPage() {
         pagesContainer.innerHTML = '';
-        pagesContainer.appendChild(transferPage.cloneNode(true));
+        const transferPage = transferPageTemplate.cloneNode(true);
+        transferPage.style.display = 'block';
+        pagesContainer.appendChild(transferPage);
         pagesContainer.style.display = 'block';
-        
-        initTransferForm();
-        document.querySelector('.back-button').addEventListener('click', hidePages);
+
+        initTransferForm(transferPage);
+        transferPage.querySelector('.back-button').addEventListener('click', hidePages);
     }
 
     function showDefaultPage(title) {
-        const newPage = defaultPage.cloneNode(true);
-        newPage.querySelector('.page-title').textContent = title;
-        
         pagesContainer.innerHTML = '';
-        pagesContainer.appendChild(newPage);
+        const defaultPage = defaultPageTemplate.cloneNode(true);
+        defaultPage.querySelector('.page-title').textContent = title;
+        defaultPage.style.display = 'block';
+        pagesContainer.appendChild(defaultPage);
         pagesContainer.style.display = 'block';
-        
-        newPage.querySelector('.back-button').addEventListener('click', hidePages);
+
+        defaultPage.querySelector('.back-button').addEventListener('click', hidePages);
     }
 
     function hidePages() {
@@ -167,59 +177,90 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Логика перевода
-    function initTransferForm() {
-        const usernameInput = document.getElementById('username');
-        const amountInput = document.getElementById('amount');
-        const sendButton = document.getElementById('send-coins');
-        const messageDiv = document.getElementById('transfer-message');
-        
+    function initTransferForm(pageElement) {
+        const usernameInput = pageElement.querySelector('#username');
+        const amountInput = pageElement.querySelector('#amount');
+        const sendButton = pageElement.querySelector('#send-coins');
+        const messageDiv = pageElement.querySelector('#transfer-message');
+        const historyList = pageElement.querySelector('#history-list');
+
+        // Отрисовка истории переводов
+        function renderHistory() {
+            historyList.innerHTML = '';
+
+            if (transferHistory.length === 0) {
+                historyList.innerHTML = '<p>Нет истории переводов</p>';
+                return;
+            }
+
+            transferHistory.slice(0, 10).forEach(transfer => {
+                const item = document.createElement('div');
+                item.className = `history-item ${transfer.type}`;
+
+                const amountPrefix = transfer.type === 'outgoing' ? '-' : '+';
+                const amountClass = transfer.type === 'outgoing' ? 'history-amount outgoing' : 'history-amount incoming';
+
+                item.innerHTML = `
+                    <div>
+                        <span class="history-username">${transfer.username}</span>
+                        <span class="history-date">${formatDate(transfer.date)}</span>
+                    </div>
+                    <span class="${amountClass}">${amountPrefix}${transfer.amount}</span>
+                `;
+
+                historyList.appendChild(item);
+            });
+        }
+
+        renderHistory();
+
         sendButton.addEventListener('click', async function() {
             const recipient = usernameInput.value.trim();
             const amount = parseInt(amountInput.value);
-            
+
             // Валидация
             if (!recipient || !recipient.startsWith('@')) {
                 showMessage('Введите корректный @username', 'error', messageDiv);
                 return;
             }
-            
-            if (isNaN(amount) {
+
+            if (isNaN(amount)) {
                 showMessage('Введите корректную сумму', 'error', messageDiv);
                 return;
             }
-            
+
             if (amount < 1) {
                 showMessage('Минимальная сумма - 1 коин', 'error', messageDiv);
                 return;
             }
-            
+
             if (amount > coins) {
                 showMessage('Недостаточно коинов', 'error', messageDiv);
                 return;
             }
-            
+
             try {
                 showMessage('Отправка...', 'info', messageDiv);
                 sendButton.disabled = true;
-                
+
                 const response = await transferCoins(recipient, amount);
-                
+
                 if (response.success) {
-                    coins -= amount;
-                    updateDisplays();
+                    // После успешного перевода — обновляем данные с сервера
+                    await loadUserData();
+
                     showMessage(`Успешно отправлено ${amount} коинов пользователю ${recipient}`, 'success', messageDiv);
-                    
-                    // Обновляем историю
+
+                    // Обновляем локальную историю (loadUserData уже обновит её, но для мгновенного отображения)
                     transferHistory.unshift({
                         type: 'outgoing',
                         username: recipient,
                         amount: amount,
                         date: new Date().toISOString()
                     });
-                    
-                    renderTransferHistory();
-                    saveUserData();
-                    
+
+                    renderHistory();
+
                     // Очищаем поля
                     usernameInput.value = '';
                     amountInput.value = '';
@@ -248,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 amount: amount
             })
         });
-        
+
         return await response.json();
     }
 
@@ -277,30 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderTransferHistory() {
-        historyList.innerHTML = '';
-        
-        if (transferHistory.length === 0) {
-            historyList.innerHTML = '<p>Нет истории переводов</p>';
-            return;
-        }
-        
-        transferHistory.slice(0, 10).forEach(transfer => {
-            const item = document.createElement('div');
-            item.className = `history-item ${transfer.type}`;
-            
-            const amountPrefix = transfer.type === 'outgoing' ? '-' : '+';
-            const amountClass = transfer.type === 'outgoing' ? 'history-amount outgoing' : 'history-amount incoming';
-            
-            item.innerHTML = `
-                <div>
-                    <span class="history-username">${transfer.username}</span>
-                    <span class="history-date">${formatDate(transfer.date)}</span>
-                </div>
-                <span class="${amountClass}">${amountPrefix}${transfer.amount}</span>
-            `;
-            
-            historyList.appendChild(item);
-        });
+        // Этот вызов теперь не нужен, т.к. история рендерится внутри формы перевода
     }
 
     function formatDate(isoString) {
