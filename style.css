@@ -158,13 +158,15 @@ body {
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
   }
   50% {
-    opacity: 0.6;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.4);
+    opacity: 0;
+    transform: translate(calc(var(--target-x) * 0.5), calc(var(--target-y) * 0.5)) scale(0.8);
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+    visibility: hidden; /* Полное исчезновение на середине пути */
   }
   100% {
     opacity: 0;
     transform: translate(var(--target-x), var(--target-y)) scale(0.5);
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+    visibility: hidden;
   }
 }
 
