@@ -1,9 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Элементы интерфейса
     const coinContainer = document.getElementById('coin');
     const coinsDisplay = document.getElementById('coins');
     const highscoreDisplay = document.getElementById('highscore');
     const pagesContainer = document.getElementById('pages-container');
-    const pageTemplate = document.querySelector('.page-template');
+    const pageTemplate = document.querySelector('.page');
 
     // Загрузка данных
     let coins = parseInt(localStorage.getItem('coins')) || 0;
@@ -15,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
         highscoreDisplay.textContent = highscore;
     }
 
-    // Обработка кликов по монете
+    // Клик по монете
     coinContainer.addEventListener('mousedown', function(e) {
         e.preventDefault();
         const rect = this.getBoundingClientRect();
@@ -33,12 +34,9 @@ document.addEventListener('DOMContentLoaded', function() {
             rotateY(${-relX * tiltAngle}deg) 
             scale(0.95)
         `;
-        
-        // Сразу создаем летящее число
-        createFloatingNumber(e.clientX, e.clientY);
     });
 
-    coinContainer.addEventListener('mouseup', function() {
+    coinContainer.addEventListener('mouseup', function(e) {
         const coinButton = this.querySelector('.coin-button');
         coinButton.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
         
@@ -49,23 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         localStorage.setItem('coins', coins);
         updateDisplays();
-    });
-
-    // Для мобильных устройств
-    coinContainer.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const mouseDown = new MouseEvent('mousedown', {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-        this.dispatchEvent(mouseDown);
-    });
-
-    coinContainer.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        const mouseUp = new MouseEvent('mouseup');
-        this.dispatchEvent(mouseUp);
+        
+        // Создаем летящее число
+        createFloatingNumber(e.clientX, e.clientY);
     });
 
     // Создание летящего числа
@@ -105,6 +89,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 pagesContainer.style.display = 'none';
             });
         });
+    });
+
+    // Для мобильных устройств
+    coinContainer.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseDown = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        this.dispatchEvent(mouseDown);
+    });
+
+    coinContainer.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        const mouseUp = new MouseEvent('mouseup', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        this.dispatchEvent(mouseUp);
+        
+        // Создаем летящее число для touch
+        createFloatingNumber(touch.clientX, touch.clientY);
     });
 
     // Блокировка нежелательных действий
