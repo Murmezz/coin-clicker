@@ -241,4 +241,64 @@ body {
     width: 250px;
     height: 250px;
   }
+/* Добавляем в конец файла */
+
+.transfer-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    max-width: 400px;
+    margin: 0 auto;
 }
+
+.transfer-input {
+    padding: 15px;
+    border-radius: 15px;
+    border: 2px solid var(--button-bg);
+    background: var(--container-bg);
+    color: var(--text-color);
+    font-size: 16px;
+    width: 100%;
+}
+
+.transfer-input:focus {
+    outline: none;
+    border-color: var(--button-hover);
+}
+
+.transfer-button {
+    background: linear-gradient(135deg, var(--button-bg) 0%, var(--button-hover) 100%);
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.transfer-button:active {
+    transform: scale(0.95);
+}
+
+.transfer-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.success-message {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+.error-message {
+    background: rgba(244, 67, 54, 0.2);
+    color: #F44336;
+}
+  }
