@@ -1,245 +1,121 @@
-:root {
-  --text-color: #ffffff;
-  --bg-color: #121212;
-  --container-bg: #1e1e1e;
-  --coin-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
-  --highlight-color: #ffffff;
-  --border-color: #333;
-  --button-bg: #7c4dff;
-  --button-hover: #5e35b1;
-  --header-bg: #673ab7;
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Элементы интерфейса
+    const coinContainer = document.getElementById('coin');
+    const coinsDisplay = document.getElementById('coins');
+    const highscoreDisplay = document.getElementById('highscore');
+    const pagesContainer = document.getElementById('pages-container');
+    const pageTemplate = document.querySelector('.page');
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+    // Загрузка данных
+    let coins = parseInt(localStorage.getItem('coins')) || 0;
+    let highscore = parseInt(localStorage.getItem('highscore')) || 0;
+    updateDisplays();
 
-body {
-  font-family: 'Arial', sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  margin: 0;
-  background: var(--bg-color);
-  color: var(--text-color);
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
+    function updateDisplays() {
+        coinsDisplay.textContent = coins;
+        highscoreDisplay.textContent = highscore;
+    }
 
-.container {
-  text-align: center;
-  background: var(--container-bg);
-  padding: 20px;
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  width: 95%;
-  max-width: 420px;
-  border: 1px solid var(--border-color);
-  position: relative;
-  margin: 10px 0;
-}
+    // Клик по монете
+    coinContainer.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        const rect = this.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        const coinButton = this.querySelector('.coin-button');
+        const tiltAngle = 12;
+        const relX = (rect.width/2 - clickX) / (rect.width/2);
+        const relY = (rect.height/2 - clickY) / (rect.height/2);
+        
+        coinButton.style.transform = `
+            perspective(500px) 
+            rotateX(${relY * tiltAngle}deg) 
+            rotateY(${-relX * tiltAngle}deg) 
+            scale(0.95)
+        `;
+    });
 
-.balance {
-  font-size: 28px;
-  margin-bottom: 20px;
-  color: var(--text-color);
-  font-weight: bold;
-}
+    coinContainer.addEventListener('mouseup', function(e) {
+        const coinButton = this.querySelector('.coin-button');
+        coinButton.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
+        
+        coins++;
+        if (coins > highscore) {
+            highscore = coins;
+            localStorage.setItem('highscore', highscore);
+        }
+        localStorage.setItem('coins', coins);
+        updateDisplays();
+        
+        // Создаем летящее число
+        createFloatingNumber(e.clientX, e.clientY);
+    });
 
-.buttons-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 25px;
-  width: 100%;
-}
+    // Создание летящего числа
+    function createFloatingNumber(startX, startY) {
+        const numberElement = document.createElement('div');
+        numberElement.className = 'floating-number';
+        numberElement.textContent = '+1';
+        
+        const balanceRect = document.querySelector('.balance').getBoundingClientRect();
+        const targetX = balanceRect.left + balanceRect.width/2 - startX;
+        const targetY = balanceRect.top - startY;
+        
+        numberElement.style.left = `${startX}px`;
+        numberElement.style.top = `${startY}px`;
+        numberElement.style.setProperty('--target-x', `${targetX}px`);
+        numberElement.style.setProperty('--target-y', `${targetY}px`);
+        
+        document.body.appendChild(numberElement);
+        
+        setTimeout(() => {
+            numberElement.remove();
+        }, 700);
+    }
 
-.button-row {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-}
+    // Навигация по страницам
+    document.querySelectorAll('.nav-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const title = this.textContent;
+            const newPage = pageTemplate.cloneNode(true);
+            newPage.querySelector('.page-title').textContent = title;
+            
+            pagesContainer.innerHTML = '';
+            pagesContainer.appendChild(newPage);
+            pagesContainer.style.display = 'block';
+            
+            newPage.querySelector('.back-button').addEventListener('click', function() {
+                pagesContainer.style.display = 'none';
+            });
+        });
+    });
 
-.first-row {
-  margin-bottom: 0;
-}
+    // Для мобильных устройств
+    coinContainer.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseDown = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        this.dispatchEvent(mouseDown);
+    });
 
-.second-row {
-  margin-top: 0;
-}
+    coinContainer.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        const mouseUp = new MouseEvent('mouseup', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        this.dispatchEvent(mouseUp);
+        
+        // Создаем летящее число для touch
+        createFloatingNumber(touch.clientX, touch.clientY);
+    });
 
-.nav-button {
-  background: linear-gradient(135deg, var(--button-bg) 0%, var(--button-hover) 100%);
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 16px 10px;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  flex: 1;
-  min-width: 0;
-}
-
-.wide-button {
-  flex: 1;
-  min-width: 0;
-  border-radius: 30px;
-}
-
-.nav-button:active {
-  transform: scale(0.95);
-}
-
-.coin-container {
-  width: 280px;
-  height: 280px;
-  margin: 0 auto 25px;
-  position: relative;
-  cursor: pointer;
-  border-radius: 50%;
-  overflow: hidden;
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
-}
-
-.coin-button {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  box-shadow: var(--coin-shadow);
-  transition: transform 0.3s ease;
-  position: relative;
-  z-index: 1;
-  backface-visibility: hidden;
-  transform-style: preserve-3d;
-}
-
-.coin-button:active {
-  box-shadow: none; /* убираем тень */
-  transform: scale(0.95); /* легкое уменьшение при клике */
-}
-
-.stats {
-  margin-top: 15px;
-  font-size: 22px;
-  color: var(--text-color);
-  font-weight: bold;
-}
-
-.floating-numbers-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 1000;
-}
-
-.floating-number {
-  position: absolute;
-  color: var(--highlight-color);
-  font-size: 32px;
-  font-weight: bold;
-  opacity: 1;
-  transform: translate(0, 0);
-  animation: floatNumber 0.7s linear forwards;
-  user-select: none;
-  will-change: transform, opacity;
-  z-index: 1001;
-  text-shadow: 0 2px 5px rgba(0,0,0,0.5);
-}
-
-@keyframes floatNumber {
-  0% {
-    opacity: 1;
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    opacity: 0;
-    transform: translate(calc(var(--target-x) * 0.6), calc(var(--target-y) * 0.6)) scale(0.7);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--target-x), var(--target-y)) scale(0.5);
-  }
-}
-
-#pages-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  z-index: 10000;
-  display: none;
-}
-
-.page {
-  width: 100%;
-  min-height: 100%;
-  background: var(--container-bg);
-  padding-top: 60px;
-}
-
-.page-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background: var(--header-bg);
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  z-index: 10001;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-}
-
-.back-button {
-  background: none;
-  border: none;
-  color: var(--text-color);
-  font-size: 28px;
-  cursor: pointer;
-  margin-right: 15px;
-  padding: 5px;
-}
-
-.page-title {
-  color: var(--text-color);
-  margin: 0;
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.page-content {
-  color: var(--text-color);
-  font-size: 18px;
-  line-height: 1.6;
-  padding: 20px;
-  text-align: center;
-}
-
-@media (max-width: 400px) {
-  .nav-button {
-    padding: 14px 8px;
-    font-size: 16px;
-  }
-  
-  .coin-container {
-    width: 250px;
-    height: 250px;
-  }
-}
+    // Блокировка нежелательных действий
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('dragstart', e => e.preventDefault());
+});
