@@ -4,7 +4,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const coinsDisplay = document.getElementById('coins');
     const highscoreDisplay = document.getElementById('highscore');
     const pagesContainer = document.getElementById('pages-container');
-    const pageTemplate = document.querySelector('.page');
+    const transferPage = document.getElementById('transfer-page');
+    const defaultPage = document.getElementById('default-page');
+    
+    // Элементы формы перевода
+    const usernameInput = document.getElementById('username');
+    const amountInput = document.getElementById('amount');
+    const sendButton = document.getElementById('send-coins');
+    const transferMessage = document.getElementById('transfer-message');
 
     // Загрузка данных
     let coins = parseInt(localStorage.getItem('coins')) || 0;
@@ -48,11 +55,10 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('coins', coins);
         updateDisplays();
         
-        // Создаем летящее число
         createFloatingNumber(e.clientX, e.clientY);
     });
 
-    // Создание летящего числа
+    // Анимация +1
     function createFloatingNumber(startX, startY) {
         const numberElement = document.createElement('div');
         numberElement.className = 'floating-number';
@@ -77,19 +83,97 @@ document.addEventListener('DOMContentLoaded', function() {
     // Навигация по страницам
     document.querySelectorAll('.nav-button').forEach(button => {
         button.addEventListener('click', function() {
-            const title = this.textContent;
-            const newPage = pageTemplate.cloneNode(true);
-            newPage.querySelector('.page-title').textContent = title;
+            const pageName = this.getAttribute('data-page');
             
-            pagesContainer.innerHTML = '';
-            pagesContainer.appendChild(newPage);
-            pagesContainer.style.display = 'block';
-            
-            newPage.querySelector('.back-button').addEventListener('click', function() {
-                pagesContainer.style.display = 'none';
-            });
+            if (pageName === 'transfer') {
+                showTransferPage();
+            } else {
+                showDefaultPage(this.textContent);
+            }
         });
     });
+
+    function showTransferPage() {
+        pagesContainer.innerHTML = '';
+        pagesContainer.appendChild(transferPage.cloneNode(true));
+        pagesContainer.style.display = 'block';
+        
+        // Инициализация формы перевода
+        initTransferForm();
+        
+        // Назначение обработчика для кнопки "назад"
+        document.querySelector('.back-button').addEventListener('click', hidePages);
+    }
+
+    function showDefaultPage(title) {
+        const newPage = defaultPage.cloneNode(true);
+        newPage.querySelector('.page-title').textContent = title;
+        
+        pagesContainer.innerHTML = '';
+        pagesContainer.appendChild(newPage);
+        pagesContainer.style.display = 'block';
+        
+        newPage.querySelector('.back-button').addEventListener('click', hidePages);
+    }
+
+    function hidePages() {
+        pagesContainer.style.display = 'none';
+    }
+
+    // Инициализация формы перевода
+    function initTransferForm() {
+        const username = document.getElementById('username');
+        const amount = document.getElementById('amount');
+        const sendBtn = document.getElementById('send-coins');
+        const message = document.getElementById('transfer-message');
+        
+        sendBtn.addEventListener('click', function() {
+            const recipient = username.value.trim();
+            const transferAmount = parseInt(amount.value);
+            
+            // Валидация
+            if (!recipient || !recipient.startsWith('@')) {
+                showMessage('Введите корректный @username', 'error');
+                return;
+            }
+            
+            if (isNaN(transferAmount) || transferAmount <= 0) {
+                showMessage('Введите корректную сумму', 'error');
+                return;
+            }
+            
+            if (transferAmount > coins) {
+                showMessage('Недостаточно коинов', 'error');
+                return;
+            }
+            
+            // Здесь должна быть логика отправки на сервер
+            // Временно эмулируем успешный перевод
+            simulateTransfer(recipient, transferAmount);
+        });
+        
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = 'transfer-message ' + type + '-message';
+        }
+        
+        function simulateTransfer(recipient, amount) {
+            // Эмуляция задержки сети
+            showMessage('Отправка...', 'success');
+            
+            setTimeout(() => {
+                coins -= amount;
+                localStorage.setItem('coins', coins);
+                updateDisplays();
+                
+                showMessage(`Успешно отправлено ${amount} коинов пользователю ${recipient}`, 'success');
+                
+                // Очистка полей
+                username.value = '';
+                amount.value = '';
+            }, 1500);
+        }
+    }
 
     // Для мобильных устройств
     coinContainer.addEventListener('touchstart', function(e) {
@@ -111,7 +195,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         this.dispatchEvent(mouseUp);
         
-        // Создаем летящее число для touch
         createFloatingNumber(touch.clientX, touch.clientY);
     });
 
