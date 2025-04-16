@@ -1,12 +1,19 @@
 :root {
-  --text-color: #e0e0e0;
+  --text-color: #ffffff;
   --bg-color: #121212;
   --container-bg: #1e1e1e;
   --coin-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
   --highlight-color: #ffffff;
   --border-color: #333;
-  --button-bg: #bb86fc;
-  --button-hover: #3700b3;
+  --button-bg: #7c4dff;
+  --button-hover: #5e35b1;
+  --header-bg: #673ab7;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -14,38 +21,41 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   margin: 0;
   background: var(--bg-color);
   color: var(--text-color);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overflow: hidden;
 }
 
 .container {
   text-align: center;
   background: var(--container-bg);
-  padding: 30px;
+  padding: 20px;
   border-radius: 20px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 500px;
+  width: 95%;
+  max-width: 100%;
   border: 1px solid var(--border-color);
   position: relative;
+  margin: 10px 0;
 }
 
 .balance {
-  font-size: 24px;
-  margin-bottom: 20px;
+  font-size: 28px;
+  margin-bottom: 25px;
   color: var(--text-color);
+  font-weight: bold;
 }
 
 .buttons-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 25px;
   width: 100%;
 }
 
@@ -53,31 +63,28 @@ body {
   background: linear-gradient(135deg, var(--button-bg) 0%, var(--button-hover) 100%);
   color: white;
   border: none;
-  border-radius: 25px;
-  padding: 12px 20px;
-  font-size: 16px;
+  border-radius: 15px;
+  padding: 18px 10px;
+  font-size: 18px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  min-width: 120px;
-  flex: 1 1 auto;
-}
-
-.nav-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: scale(0.95);
 }
 
 .coin-container {
-  width: 300px;
-  height: 300px;
-  margin: 0 auto;
+  width: 280px;
+  height: 280px;
+  margin: 0 auto 25px;
   position: relative;
   cursor: pointer;
   border-radius: 50%;
@@ -119,9 +126,10 @@ body {
 }
 
 .stats {
-  margin-top: 20px;
-  font-size: 18px;
+  margin-top: 15px;
+  font-size: 22px;
   color: var(--text-color);
+  font-weight: bold;
 }
 
 .floating-numbers-container {
@@ -137,7 +145,7 @@ body {
 .floating-number {
   position: absolute;
   color: var(--highlight-color);
-  font-size: 28px;
+  font-size: 32px;
   font-weight: bold;
   opacity: 1;
   transform: translate(0, 0);
@@ -145,6 +153,7 @@ body {
   user-select: none;
   will-change: transform, opacity;
   z-index: 1001;
+  text-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 
 @keyframes floatNumber {
@@ -168,73 +177,74 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--container-bg);
+  background: rgba(0,0,0,0.7);
   z-index: 10000;
   display: none;
-  padding: 20px;
-  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .page-template {
-  max-width: 800px;
-  margin: 0 auto;
-  padding-top: 50px;
+  width: 100%;
+  min-height: 100%;
+  background: var(--container-bg);
+  padding-top: 60px;
 }
 
 .page-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: var(--header-bg);
+  padding: 15px;
   display: flex;
   align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--border-color);
+  z-index: 10001;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
 .back-button {
   background: none;
   border: none;
-  color: var(--highlight-color);
-  font-size: 28px;
+  color: var(--text-color);
+  font-size: 32px;
   cursor: pointer;
   margin-right: 15px;
-  padding: 5px 15px 5px 5px;
+  padding: 5px;
 }
 
 .page-title {
   color: var(--text-color);
   margin: 0;
+  font-size: 22px;
+  font-weight: bold;
 }
 
 .page-content {
   color: var(--text-color);
   font-size: 18px;
   line-height: 1.6;
+  padding: 20px;
+  text-align: center;
 }
 
-@media (max-width: 600px) {
-  .buttons-container {
-    gap: 8px;
-  }
-  
-  .nav-button {
-    padding: 10px 15px;
-    font-size: 14px;
-    min-width: 100px;
-  }
-  
+@media (max-width: 400px) {
   .coin-container {
     width: 250px;
     height: 250px;
   }
-}
-
-@media (max-width: 400px) {
+  
   .nav-button {
-    min-width: 80px;
-    font-size: 12px;
-    padding: 8px 12px;
+    font-size: 16px;
+    padding: 15px 8px;
+    min-height: 55px;
   }
   
-  .container {
-    padding: 20px;
+  .balance {
+    font-size: 24px;
+  }
+  
+  .stats {
+    font-size: 20px;
   }
 }
