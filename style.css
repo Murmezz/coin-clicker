@@ -1,9 +1,9 @@
 :root {
-  --text-color: #e0e0e0;
+  --text-color: #ffffff; /* Белый цвет текста */
   --bg-color: #121212;
   --container-bg: #1e1e1e;
   --coin-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
-  --highlight-color: #bb86fc;
+  --highlight-color: #ffffff; /* Белый вместо фиолетового */
   --border-color: #333;
 }
 
@@ -47,6 +47,9 @@ body {
   margin: 0 auto;
   position: relative;
   cursor: pointer;
+  border-radius: 50%; /* Фикс размазывания текстуры */
+  overflow: hidden; /* Фикс размазывания текстуры */
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Фикс для Safari */
 }
 
 .coin-button {
@@ -56,10 +59,13 @@ body {
   background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat; /* Фикс размазывания */
   box-shadow: var(--coin-shadow);
   transition: transform 0.3s ease;
   position: relative;
   z-index: 1;
+  backface-visibility: hidden; /* Фикс артефактов анимации */
+  transform-style: preserve-3d; /* Фикс артефактов */
 }
 
 .coin-button::after {
@@ -106,7 +112,6 @@ body {
   animation: floatNumber 0.7s ease-out forwards;
   user-select: none;
   will-change: transform, opacity;
-  text-shadow: 0 0 8px rgba(187, 134, 252, 0.5);
   z-index: 1001;
 }
 
@@ -114,29 +119,16 @@ body {
   0% {
     opacity: 1;
     transform: translate(0, 0) scale(1);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
   }
-  70% {
-    opacity: 0.9;
+  50% {
+    opacity: 0.6;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.4);
   }
   100% {
     opacity: 0;
-    transform: translate(var(--target-x), var(--target-y)) scale(0.8);
-  }
-}
-
-/* Анимация наклона */
-@keyframes coinTilt {
-  0% {
-    transform: perspective(500px) rotateX(0) rotateY(0) scale(1);
-  }
-  50% {
-    transform: perspective(500px) 
-              rotateX(var(--tilt-x)) 
-              rotateY(var(--tilt-y)) 
-              scale(0.95);
-  }
-  100% {
-    transform: perspective(500px) rotateX(0) rotateY(0) scale(1);
+    transform: translate(var(--target-x), var(--target-y)) scale(0.5);
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
   }
 }
 
