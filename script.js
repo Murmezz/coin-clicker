@@ -1,32 +1,39 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Элементы интерфейса
     const coinContainer = document.getElementById('coin');
     const coinsDisplay = document.getElementById('coins');
     const highscoreDisplay = document.getElementById('highscore');
     const pagesContainer = document.getElementById('pages-container');
     const pageTemplate = document.querySelector('.page-template');
 
-    // Загружаем сохранённые данные
+    // Загрузка данных
     let coins = parseInt(localStorage.getItem('coins')) || 0;
     let highscore = parseInt(localStorage.getItem('highscore')) || 0;
+    updateDisplays();
 
-    coinsDisplay.textContent = coins;
-    highscoreDisplay.textContent = highscore;
+    // Обновление отображения
+    function updateDisplays() {
+        coinsDisplay.textContent = coins;
+        highscoreDisplay.textContent = highscore;
+    }
 
-    // Обработка кликов по монете
-    coinContainer.addEventListener('mousedown', function(e) {
+    // Клик по монете
+    coinContainer.addEventListener('mousedown', handleCoinPress);
+    coinContainer.addEventListener('touchstart', function(e) {
         e.preventDefault();
+        handleCoinPress(e.touches[0]);
+    });
 
-        const rect = this.getBoundingClientRect();
+    function handleCoinPress(e) {
+        const rect = coinContainer.getBoundingClientRect();
         const radius = rect.width / 2;
         const centerX = rect.left + radius;
         const centerY = rect.top + radius;
 
-        // Вычисляем направление наклона
         const relX = (centerX - e.clientX) / radius;
         const relY = (centerY - e.clientY) / radius;
 
-        // Анимация наклона
-        const coinButton = this.querySelector('.coin-button');
+        const coinButton = coinContainer.querySelector('.coin-button');
         const tiltAngle = 12;
         coinButton.style.transform = `
             perspective(500px) 
@@ -34,31 +41,31 @@ document.addEventListener('DOMContentLoaded', function() {
             rotateY(${-relX * tiltAngle}deg) 
             scale(0.95)
         `;
+    }
+
+    coinContainer.addEventListener('mouseup', handleCoinRelease);
+    coinContainer.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        handleCoinRelease(e.changedTouches[0]);
     });
 
-    coinContainer.addEventListener('mouseup', function(e) {
-        const coinButton = this.querySelector('.coin-button');
-        
-        // Возврат в исходное положение
+    function handleCoinRelease(e) {
+        const coinButton = coinContainer.querySelector('.coin-button');
         coinButton.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
 
-        // Увеличиваем счётчик
         coins++;
-        coinsDisplay.textContent = coins;
         localStorage.setItem('coins', coins);
-
-        // Обновляем рекорд
+        
         if (coins > highscore) {
             highscore = coins;
-            highscoreDisplay.textContent = highscore;
             localStorage.setItem('highscore', highscore);
         }
-
-        // Создаём летящее число
+        
+        updateDisplays();
         createFloatingNumber(e.clientX, e.clientY);
-    });
+    }
 
-    // Создание летящего числа
+    // Анимация +1
     function createFloatingNumber(startX, startY) {
         const numberElement = document.createElement('div');
         numberElement.className = 'floating-number';
@@ -71,22 +78,17 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.appendChild(floatingContainer);
         }
         
-        // Позиция баланса
         const balanceRect = document.querySelector('.balance').getBoundingClientRect();
         const targetX = balanceRect.left + balanceRect.width/2 - startX;
         const targetY = balanceRect.top - startY;
         
-        // Устанавливаем начальную позицию
         numberElement.style.left = `${startX}px`;
         numberElement.style.top = `${startY}px`;
-        
-        // Передаём конечные координаты
         numberElement.style.setProperty('--target-x', `${targetX}px`);
         numberElement.style.setProperty('--target-y', `${targetY}px`);
         
         floatingContainer.appendChild(numberElement);
         
-        // Удаляем элемент после анимации
         setTimeout(() => {
             numberElement.remove();
             if (floatingContainer.children.length === 0) {
@@ -95,61 +97,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 700);
     }
 
-    // Обработчики для кнопок навигации
+    // Навигация
     document.querySelectorAll('.nav-button').forEach(button => {
         button.addEventListener('click', function() {
-            const pageName = this.getAttribute('data-page');
-            showPage(this.textContent);
+            showPage(this.textContent, this.getAttribute('data-page'));
         });
     });
 
-    // Показ страницы
-    function showPage(title) {
-        // Клонируем шаблон
+    function showPage(title, pageName) {
         const newPage = pageTemplate.cloneNode(true);
         newPage.querySelector('.page-title').textContent = title;
         
-        // Очищаем контейнер и добавляем новую страницу
         pagesContainer.innerHTML = '';
         pagesContainer.appendChild(newPage);
-        
-        // Показываем контейнер
         pagesContainer.style.display = 'block';
         
-        // Добавляем обработчик для кнопки "назад"
         newPage.querySelector('.back-button').addEventListener('click', hidePages);
     }
 
-    // Скрытие страниц
     function hidePages() {
         pagesContainer.style.display = 'none';
     }
 
-    // Для мобильных устройств
-    coinContainer.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const mouseEvent = new MouseEvent('mousedown', {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-        this.dispatchEvent(mouseEvent);
-    });
-
-    coinContainer.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        const mouseEvent = new MouseEvent('mouseup', {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-        this.dispatchEvent(mouseEvent);
-        
-        // Создаём летящее число для touch-событий
-        createFloatingNumber(touch.clientX, touch.clientY);
-    });
-
     // Блокировка нежелательных действий
-    coinContainer.addEventListener('contextmenu', (e) => e.preventDefault());
-    coinContainer.addEventListener('dragstart', (e) => e.preventDefault());
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('dragstart', (e) => e.preventDefault());
+
+    // Проверка ориентации
+    function checkOrientation() {
+        if (window.innerWidth > window.innerHeight) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+    }
+    
+    window.addEventListener('resize', checkOrientation);
+    checkOrientation();
 });
