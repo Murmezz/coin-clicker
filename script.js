@@ -1,6 +1,8 @@
 const coinContainer = document.getElementById('coin');
 const coinsDisplay = document.getElementById('coins');
 const highscoreDisplay = document.getElementById('highscore');
+const pagesContainer = document.getElementById('pages-container');
+const pageTemplate = document.querySelector('.page-template');
 
 // Загружаем сохранённые данные
 let coins = localStorage.getItem('coins') || 0;
@@ -9,6 +11,7 @@ let highscore = localStorage.getItem('highscore') || 0;
 coinsDisplay.textContent = coins;
 highscoreDisplay.textContent = highscore;
 
+// Обработка кликов по монете
 coinContainer.addEventListener('mousedown', function(e) {
     e.preventDefault();
 
@@ -55,12 +58,12 @@ coinContainer.addEventListener('mouseup', function(e) {
     createFloatingNumber(e.clientX, e.clientY);
 });
 
+// Создание летящего числа
 function createFloatingNumber(startX, startY) {
     const numberElement = document.createElement('div');
     numberElement.className = 'floating-number';
     numberElement.textContent = '+1';
     
-    // Создаем контейнер для летящих чисел, если его нет
     let floatingContainer = document.querySelector('.floating-numbers-container');
     if (!floatingContainer) {
         floatingContainer = document.createElement('div');
@@ -77,10 +80,10 @@ function createFloatingNumber(startX, startY) {
     numberElement.style.left = `${startX}px`;
     numberElement.style.top = `${startY}px`;
     
-    // Уменьшаем время анимации до 0.7 секунд
+    // Уменьшаем время анимации
     numberElement.style.animationDuration = '0.7s';
     
-    // Передаём конечные координаты через CSS переменные
+    // Передаём конечные координаты
     numberElement.style.setProperty('--target-x', `${targetX}px`);
     numberElement.style.setProperty('--target-y', `${targetY}px`);
     
@@ -89,11 +92,40 @@ function createFloatingNumber(startX, startY) {
     // Удаляем элемент после анимации
     setTimeout(() => {
         numberElement.remove();
-        // Удаляем контейнер, если он пустой
         if (floatingContainer.children.length === 0) {
             floatingContainer.remove();
         }
     }, 700);
+}
+
+// Обработчики для кнопок навигации
+document.querySelectorAll('.nav-button').forEach(button => {
+    button.addEventListener('click', function() {
+        const pageName = this.getAttribute('data-page');
+        showPage(this.textContent);
+    });
+});
+
+// Показ страницы
+function showPage(title) {
+    // Клонируем шаблон
+    const newPage = pageTemplate.cloneNode(true);
+    newPage.querySelector('.page-title').textContent = title;
+    
+    // Очищаем контейнер и добавляем новую страницу
+    pagesContainer.innerHTML = '';
+    pagesContainer.appendChild(newPage);
+    
+    // Показываем контейнер
+    pagesContainer.style.display = 'block';
+    
+    // Добавляем обработчик для кнопки "назад"
+    newPage.querySelector('.back-button').addEventListener('click', hidePages);
+}
+
+// Скрытие страниц
+function hidePages() {
+    pagesContainer.style.display = 'none';
 }
 
 // Для мобильных устройств
@@ -123,18 +155,3 @@ coinContainer.addEventListener('touchend', function(e) {
 // Блокировка нежелательных действий
 coinContainer.addEventListener('contextmenu', (e) => e.preventDefault());
 coinContainer.addEventListener('dragstart', (e) => e.preventDefault());
-// Добавляем в конец файла
-
-// Обработчики для новых кнопок
-document.querySelectorAll('.nav-button').forEach(button => {
-    button.addEventListener('click', function() {
-        // Временная заглушка - можно добавить реальную функциональность
-        console.log(`Нажата кнопка: ${this.textContent}`);
-        
-        // Анимация нажатия
-        this.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            this.style.transform = '';
-        }, 100);
-    });
-});
