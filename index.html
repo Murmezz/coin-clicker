@@ -11,11 +11,17 @@
         <div class="balance">Баланс: <span id="coins">0</span></div>
         
         <div class="buttons-container">
-            <button class="nav-button" data-page="top">Топ</button>
-            <button class="nav-button" data-page="shop">Магазин</button>
-            <button class="nav-button" data-page="games">Игры</button>
-            <button class="nav-button wide-button" data-page="transfer">Перевести</button>
-            <button class="nav-button wide-button" data-page="referrals">Рефералы</button>
+            <!-- Первый ряд - 3 кнопки -->
+            <div class="button-row first-row">
+                <button class="nav-button" data-page="top">Топ</button>
+                <button class="nav-button" data-page="shop">Магазин</button>
+                <button class="nav-button" data-page="games">Игры</button>
+            </div>
+            <!-- Второй ряд - 2 растянутые кнопки -->
+            <div class="button-row second-row">
+                <button class="nav-button wide-button" data-page="transfer">Перевести</button>
+                <button class="nav-button wide-button" data-page="referrals">Рефералы</button>
+            </div>
         </div>
 
         <div id="coin" class="coin-container">
@@ -26,8 +32,9 @@
             <div>🔝 Рекорд: <span id="highscore">0</span></div>
         </div>
 
+        <!-- Контейнер для страниц -->
         <div id="pages-container">
-            <div class="page-template">
+            <div class="page">
                 <div class="page-header">
                     <button class="back-button">←</button>
                     <h2 class="page-title"></h2>
