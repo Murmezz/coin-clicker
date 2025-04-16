@@ -10,25 +10,33 @@
     <div class="container">
         <div class="balance">Ваш баланс: <span id="coins">0</span></div>
         
-        <!-- Первый ряд кнопок -->
-        <div class="button-row first-row">
-            <button class="nav-button">Топ</button>
-            <button class="nav-button">Магазин</button>
-            <button class="nav-button">Игры</button>
+        <!-- Все кнопки в одном блоке над монетой -->
+        <div class="buttons-container">
+            <button class="nav-button" data-page="top">Топ</button>
+            <button class="nav-button" data-page="shop">Магазин</button>
+            <button class="nav-button" data-page="games">Игры</button>
+            <button class="nav-button" data-page="transfer">Перевести</button>
+            <button class="nav-button" data-page="referrals">Рефералы</button>
         </div>
-        
+
         <div id="coin" class="coin-container">
             <div class="coin-button"></div>
         </div>
-        
-        <!-- Второй ряд кнопок -->
-        <div class="button-row second-row">
-            <button class="nav-button">Перевести</button>
-            <button class="nav-button">Рефералы</button>
-        </div>
-        
+
         <div class="stats">
             <div>🔝 Рекорд: <span id="highscore">0</span></div>
+        </div>
+
+        <!-- Контейнер для страниц -->
+        <div id="pages-container">
+            <!-- Шаблон страницы -->
+            <div class="page-template">
+                <div class="page-header">
+                    <button class="back-button">←</button>
+                    <h2 class="page-title"></h2>
+                </div>
+                <div class="page-content">В разработке...</div>
+            </div>
         </div>
     </div>
     <script src="script.js"></script>
