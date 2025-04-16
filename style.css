@@ -53,7 +53,7 @@ body {
 
 .buttons-container {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-bottom: 25px;
   width: 100%;
@@ -75,6 +75,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.wide-button {
+  grid-column: span 2;
 }
 
 .nav-button:active {
@@ -187,7 +191,7 @@ body {
   width: 100%;
   min-height: 100%;
   background: var(--container-bg);
-  padding-top: 60px;
+  padding-top: 40px; /* Уменьшили отступ */
 }
 
 .page-header {
@@ -196,27 +200,28 @@ body {
   left: 0;
   width: 100%;
   background: var(--header-bg);
-  padding: 15px;
+  padding: 5px 15px; /* Уменьшили padding */
   display: flex;
   align-items: center;
   z-index: 10001;
   box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  height: 40px; /* Фиксированная высота */
 }
 
 .back-button {
   background: none;
   border: none;
   color: var(--text-color);
-  font-size: 32px;
+  font-size: 24px; /* Уменьшили размер стрелки */
   cursor: pointer;
-  margin-right: 15px;
-  padding: 5px;
+  margin-right: 10px;
+  padding: 2px;
 }
 
 .page-title {
   color: var(--text-color);
   margin: 0;
-  font-size: 22px;
+  font-size: 18px; /* Уменьшили размер шрифта */
   font-weight: bold;
 }
 
@@ -246,5 +251,18 @@ body {
   
   .stats {
     font-size: 20px;
+  }
+  
+  .page-header {
+    height: 35px;
+    padding: 3px 10px;
+  }
+  
+  .back-button {
+    font-size: 20px;
+  }
+  
+  .page-title {
+    font-size: 16px;
   }
 }
