@@ -151,3 +151,59 @@ body {
     padding: 20px;
   }
 }
+/* Добавляем в конец файла */
+
+.button-row {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 15px 0;
+    width: 100%;
+}
+
+.first-row {
+    margin-bottom: 5px;
+}
+
+.second-row {
+    margin-top: 5px;
+}
+
+.nav-button {
+    background: linear-gradient(135deg, #bb86fc 0%, #3700b3 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    flex: 1;
+    max-width: 150px;
+    min-width: 100px;
+}
+
+.nav-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.nav-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Адаптив для кнопок */
+@media (max-width: 500px) {
+    .button-row {
+        gap: 10px;
+    }
+    
+    .nav-button {
+        padding: 10px 15px;
+        font-size: 14px;
+        max-width: 120px;
+    }
+}
