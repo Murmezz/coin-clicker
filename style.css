@@ -124,6 +124,10 @@ body {
   backface-visibility: hidden;
   transform-style: preserve-3d;
 }
+.coin-button:active {
+  box-shadow: none; /* убираем тень */
+  transform: scale(0.95); /* легкое уменьшение при клике */
+}
 
 .stats {
   margin-top: 15px;
