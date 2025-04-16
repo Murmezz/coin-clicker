@@ -123,3 +123,18 @@ coinContainer.addEventListener('touchend', function(e) {
 // Блокировка нежелательных действий
 coinContainer.addEventListener('contextmenu', (e) => e.preventDefault());
 coinContainer.addEventListener('dragstart', (e) => e.preventDefault());
+// Добавляем в конец файла
+
+// Обработчики для новых кнопок
+document.querySelectorAll('.nav-button').forEach(button => {
+    button.addEventListener('click', function() {
+        // Временная заглушка - можно добавить реальную функциональность
+        console.log(`Нажата кнопка: ${this.textContent}`);
+        
+        // Анимация нажатия
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            this.style.transform = '';
+        }, 100);
+    });
+});
