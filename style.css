@@ -20,7 +20,6 @@ body {
   color: var(--text-color);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  overflow: hidden;
 }
 
 .container {
@@ -33,14 +32,12 @@ body {
   max-width: 500px;
   border: 1px solid var(--border-color);
   position: relative;
-  z-index: 10;
 }
 
 .balance {
   font-size: 24px;
   margin-bottom: 20px;
   color: var(--text-color);
-  position: relative;
 }
 
 .buttons-container {
@@ -135,7 +132,6 @@ body {
   height: 100vh;
   pointer-events: none;
   z-index: 1000;
-  overflow: hidden;
 }
 
 .floating-number {
@@ -145,7 +141,7 @@ body {
   font-weight: bold;
   opacity: 1;
   transform: translate(0, 0);
-  animation: floatNumber 0.7s ease-out forwards;
+  animation: floatNumber 0.7s linear forwards;
   user-select: none;
   will-change: transform, opacity;
   z-index: 1001;
@@ -155,18 +151,14 @@ body {
   0% {
     opacity: 1;
     transform: translate(0, 0) scale(1);
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
   }
   50% {
     opacity: 0;
-    transform: translate(calc(var(--target-x) * 0.5), calc(var(--target-y) * 0.5)) scale(0.8);
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
-    visibility: hidden; /* Полное исчезновение на середине пути */
+    transform: translate(calc(var(--target-x) * 0.6), calc(var(--target-y) * 0.6)) scale(0.7);
   }
   100% {
     opacity: 0;
     transform: translate(var(--target-x), var(--target-y)) scale(0.5);
-    visibility: hidden;
   }
 }
 
@@ -179,7 +171,6 @@ body {
   background: var(--container-bg);
   z-index: 10000;
   display: none;
-  overflow-y: auto;
   padding: 20px;
   box-sizing: border-box;
 }
@@ -206,25 +197,17 @@ body {
   cursor: pointer;
   margin-right: 15px;
   padding: 5px 15px 5px 5px;
-  transition: transform 0.2s;
-}
-
-.back-button:active {
-  transform: scale(0.9);
 }
 
 .page-title {
   color: var(--text-color);
   margin: 0;
-  font-size: 24px;
 }
 
 .page-content {
   color: var(--text-color);
   font-size: 18px;
   line-height: 1.6;
-  text-align: center;
-  padding: 20px;
 }
 
 @media (max-width: 600px) {
