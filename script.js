@@ -83,6 +83,33 @@ function createFloatingNumber(startX, startY) {
     // Уменьшаем время анимации
     numberElement.style.animationDuration = '0.7s';
     
+    // Передаём конечные координаты (уменьшенные вдвое для середины пути)
+    numberElement.style.setProperty('--target-x', `${targetX}px`);
+    numberElement.style.setProperty('--target-y', `${targetY}px`);
+    
+    floatingContainer.appendChild(numberElement);
+    
+    // Удаляем элемент на середине анимации (350ms для 700ms длительности)
+    setTimeout(() => {
+        numberElement.remove();
+        if (floatingContainer.children.length === 0) {
+            floatingContainer.remove();
+        }
+    }, 350); // Удаляем через половину времени анимации
+}
+    
+    // Позиция баланса
+    const balanceRect = document.querySelector('.balance').getBoundingClientRect();
+    const targetX = balanceRect.left + balanceRect.width/2 - startX;
+    const targetY = balanceRect.top - startY;
+    
+    // Устанавливаем начальную позицию
+    numberElement.style.left = `${startX}px`;
+    numberElement.style.top = `${startY}px`;
+    
+    // Уменьшаем время анимации
+    numberElement.style.animationDuration = '0.7s';
+    
     // Передаём конечные координаты
     numberElement.style.setProperty('--target-x', `${targetX}px`);
     numberElement.style.setProperty('--target-y', `${targetY}px`);
