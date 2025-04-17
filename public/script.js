@@ -20,45 +20,46 @@ let coins = 0;
 let highscore = 0;
 let transferHistory = [];
 
-// Получение данных пользователя Telegram
+// Элементы интерфейса
+const coinsDisplay = document.getElementById('coins');
+const highscoreDisplay = document.getElementById('highscore');
+const coinElement = document.querySelector('.coin-button');
+const pagesContainer = document.getElementById('pages-container');
+
+// Инициализация пользователя
 function initTelegramUser() {
-  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user) {
     const tgUser = Telegram.WebApp.initDataUnsafe.user;
-    if (tgUser) {
-      USER_ID = `tg_${tgUser.id}`;
-      currentUsername = tgUser.username ? `@${tgUser.username}` : `@user${tgUser.id.toString().slice(-4)}`;
-      console.log('Telegram user detected:', currentUsername);
-      return;
-    }
+    USER_ID = `tg_${tgUser.id}`;
+    currentUsername = tgUser.username ? `@${tgUser.username}` : `@user${tgUser.id.slice(-4)}`;
+    console.log('Telegram user detected:', USER_ID, currentUsername);
+  } else {
+    // Режим тестирования вне Telegram
+    USER_ID = `dev_${Math.random().toString(36).substr(2, 9)}`;
+    currentUsername = `@dev_${Math.random().toString(36).substr(2, 5)}`;
+    console.log('Test user created:', USER_ID, currentUsername);
   }
-  
-  // Fallback для тестирования вне Telegram
-  USER_ID = `temp_${Math.random().toString(36).substr(2, 9)}`;
-  currentUsername = `@tempuser_${Math.random().toString(36).substr(2, 5)}`;
-  console.log('Test user created:', currentUsername);
+  localStorage.setItem('user_id', USER_ID);
 }
 
 // Загрузка данных пользователя
 async function loadUserData() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
         coins = data.balance || 100;
         highscore = data.highscore || 0;
         transferHistory = data.transfers || [];
-        
-        // Обновляем username если изменился
-        if (data.username !== currentUsername) {
-          db.ref(`users/${USER_ID}/username`).set(currentUsername);
-        }
-        
         console.log('User data loaded:', data);
       } else {
         createNewUser();
       }
       updateDisplays();
       resolve();
+    }, (error) => {
+      console.error('Error loading data:', error);
+      reject(error);
     });
   });
 }
@@ -70,77 +71,48 @@ async function createNewUser() {
     highscore: 0,
     transfers: [],
     username: currentUsername,
-    created_at: firebase.database.ServerValue.TIMESTAMP,
-    is_active: true
+    created_at: firebase.database.ServerValue.TIMESTAMP
   };
-  
   await db.ref(`users/${USER_ID}`).set(userData);
   console.log('New user created:', userData);
 }
 
-// Система переводов (обновленная)
-async function transferCoins(recipientUsername, amount) {
+// Сохранение данных
+async function saveUserData() {
   try {
-    // Валидация
-    if (recipientUsername === currentUsername) {
-      return { success: false, message: 'Нельзя перевести себе' };
-    }
-
-    // Поиск получателя
-    const snapshot = await db.ref('users').once('value');
-    let recipientFound = false;
-    let recipientData = null;
-    
-    snapshot.forEach((childSnapshot) => {
-      const user = childSnapshot.val();
-      if (user.username === recipientUsername) {
-        recipientFound = true;
-        recipientData = {
-          id: childSnapshot.key,
-          ...user
-        };
-      }
+    await db.ref(`users/${USER_ID}`).update({
+      balance: coins,
+      highscore: highscore,
+      transfers: transferHistory
     });
-
-    if (!recipientFound) {
-      return { success: false, message: 'Пользователь не найден' };
-    }
-
-    // Проверка активности получателя
-    if (recipientData.is_active === false) {
-      return { success: false, message: 'Получатель неактивен' };
-    }
-
-    // Обновление балансов
-    const updates = {};
-    updates[`users/${USER_ID}/balance`] = coins - amount;
-    updates[`users/${recipientData.id}/balance`] = (recipientData.balance || 0) + amount;
-    
-    // Запись в историю
-    const transferRecord = {
-      type: 'outgoing',
-      to: recipientUsername,
-      amount: amount,
-      date: new Date().toISOString()
-    };
-    
-    const recipientTransferRecord = {
-      type: 'incoming',
-      from: currentUsername,
-      amount: amount,
-      date: new Date().toISOString()
-    };
-    
-    updates[`users/${USER_ID}/transfers`] = [...transferHistory, transferRecord];
-    updates[`users/${recipientData.id}/transfers`] = [...(recipientData.transfers || []), recipientTransferRecord];
-    
-    await db.ref().update(updates);
-    return { success: true };
-    
+    console.log('Data saved');
   } catch (error) {
-    console.error('Transfer error:', error);
-    return { success: false, message: 'Ошибка сервера' };
+    console.error('Error saving data:', error);
   }
+}
+
+// Обновление интерфейса
+function updateDisplays() {
+  coinsDisplay.textContent = coins;
+  highscoreDisplay.textContent = highscore;
+  console.log('UI updated:', coins, highscore);
+}
+
+// Инициализация обработчиков событий
+function initEventListeners() {
+  // Клик по монете
+  coinElement.addEventListener('click', () => {
+    coins++;
+    if (coins > highscore) highscore = coins;
+    updateDisplays();
+    saveUserData();
+    console.log('Coin clicked! Balance:', coins);
+  });
+
+  // Навигация
+  document.querySelectorAll('.nav-button').forEach(button => {
+    button.addEventListener('click', handleNavButtonClick);
+  });
 }
 
 // Инициализация при загрузке
@@ -148,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTelegramUser();
   await loadUserData();
   initEventListeners();
-  console.log('Game initialized for:', currentUsername);
+  console.log('Initialization complete');
 });
 
 // ========================
