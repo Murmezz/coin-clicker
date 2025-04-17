@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadUserData() {
   try {
-    const snapshot = await db.ref(`users/${USER_ID}`).once('value');
+    const snapshot = await db.ref(`users/${USER_ID}`).on('value');
     
     if (snapshot.exists()) {
       const data = snapshot.val();
