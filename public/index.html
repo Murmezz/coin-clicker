@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Coin Clicker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="balance">Баланс: <span id="coins">0</span></div>
+        
+        <div class="buttons-container">
+            <div class="button-row first-row">
+                <button class="nav-button" data-page="top">Топ</button>
+                <button class="nav-button" data-page="shop">Магазин</button>
+                <button class="nav-button" data-page="games">Игры</button>
+            </div>
+            <div class="button-row second-row">
+                <button class="nav-button wide-button" data-page="transfer">Перевести</button>
+                <button class="nav-button wide-button" data-page="referrals">Рефералы</button>
+            </div>
+        </div>
+
+        <div id="coin" class="coin-container">
+            <div class="coin-button"></div>
+        </div>
+
+        <div class="stats">
+            <div>🔝 Рекорд: <span id="highscore">0</span></div>
+        </div>
+
+        <div id="pages-container">
+            <!-- Шаблон для страницы перевода -->
+            <div class="page" id="transfer-page">
+                <div class="page-header">
+                    <button class="back-button">←</button>
+                    <h2 class="page-title">Перевод</h2>
+                </div>
+                <div class="page-content">
+                    <div class="transfer-form">
+                        <input type="text" id="username" placeholder="@username получателя" class="transfer-input">
+                        <input type="number" id="amount" placeholder="Сумма" min="1" class="transfer-input">
+                        <button id="send-coins" class="transfer-button">Отправить</button>
+                        <div id="transfer-message" class="transfer-message"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Шаблон для других страниц -->
+            <div class="page" id="default-page">
+                <div class="page-header">
+                    <button class="back-button">←</button>
+                    <h2 class="page-title"></h2>
+                </div>
+                <div class="page-content">В разработке...</div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
