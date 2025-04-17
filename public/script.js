@@ -31,6 +31,20 @@ const pagesContainer = document.getElementById('pages-container');
 const transferPage = document.getElementById('transfer-page');
 const defaultPage = document.getElementById('default-page');
 
+// Сохранение данных пользователя
+async function saveUserData() {
+  try {
+    await db.ref(`users/${USER_ID}`).update({
+      balance: coins,
+      highscore: highscore,
+      transfers: transferHistory
+    });
+    console.log('Data saved');
+  } catch (error) {
+    console.error('Error saving data:', error);
+  }
+}
+
 // Инициализация пользователя
 function initTelegramUser() {
   if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user) {
@@ -137,7 +151,19 @@ function handleNavButtonClick(button) {
   }
 }
 
-// Показ страницы перевода
+// Показать стандартную страницу
+function showDefaultPage(title) {
+  pagesContainer.innerHTML = '';
+  const page = defaultPage.cloneNode(true);
+  page.querySelector('.page-title').textContent = title;
+  pagesContainer.appendChild(page);
+  pagesContainer.style.display = 'block';
+
+  // Кнопка "Назад"
+  page.querySelector('.back-button').addEventListener('click', hidePages);
+}
+
+// Показать страницу перевода
 function showTransferPage() {
   pagesContainer.innerHTML = '';
   const page = transferPage.cloneNode(true);
@@ -149,7 +175,7 @@ function showTransferPage() {
   const usernameInput = page.querySelector('#username');
   const amountInput = page.querySelector('#amount');
   const messageDiv = page.querySelector('#transfer-message');
-  const historyList = page.querySelector('#history-list'); // Добавлено
+  const historyList = page.querySelector('#history-list');
 
   sendButton.addEventListener('click', async () => {
     const recipient = usernameInput.value.trim();
@@ -199,8 +225,19 @@ function showTransferPage() {
   renderTransferHistory(historyList);
 }
 
+// Скрыть все страницы
+function hidePages() {
+  pagesContainer.style.display = 'none';
+}
+
+// Показ сообщения
+function showMessage(text, type, element) {
+  element.textContent = text;
+  element.className = `transfer-message ${type}-message`;
+}
+
 // Рендер истории переводов
-function renderTransferHistory(historyContainer) { // Добавлен аргумент
+function renderTransferHistory(historyContainer) {
   if (!historyContainer) return;
 
   historyContainer.innerHTML = '';
