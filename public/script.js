@@ -27,6 +27,10 @@ const coinContainer = document.getElementById('coin');
 const coinElement = document.querySelector('.coin-button');
 const pagesContainer = document.getElementById('pages-container');
 
+// Сохранение страниц для повторного использования
+const transferPage = document.getElementById('transfer-page');
+const defaultPage = document.getElementById('default-page');
+
 // Инициализация пользователя
 function initTelegramUser() {
   if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user) {
