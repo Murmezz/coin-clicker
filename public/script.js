@@ -278,6 +278,48 @@ function formatDate(isoString) {
   });
 }
 
+// Функция для перевода коинов
+async function transferCoins(recipientUsername, amount) {
+  try {
+    // Найти ID получателя по его username
+    const recipientSnapshot = await db.ref('users').orderByChild('username').equalTo(recipientUsername).once('value');
+
+    if (!recipientSnapshot.exists()) {
+      return { success: false, message: 'Пользователь не найден' };
+    }
+
+    // Получить данные получателя
+    const recipientData = recipientSnapshot.val();
+    const recipientId = Object.keys(recipientData)[0];
+    const recipientBalance = recipientData[recipientId].balance || 0;
+
+    // Обновить баланс получателя
+    await db.ref(`users/${recipientId}`).update({
+      balance: recipientBalance + amount
+    });
+
+    // Обновить баланс отправителя
+    await db.ref(`users/${USER_ID}`).update({
+      balance: coins - amount
+    });
+
+    // Добавить запись в историю переводов
+    const transferRecord = {
+      type: 'outgoing',
+      username: recipientUsername,
+      amount: amount,
+      date: new Date().toISOString()
+    };
+
+    await db.ref(`users/${USER_ID}/transfers`).push(transferRecord);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Transfer error:', error);
+    return { success: false, message: 'Ошибка сети' };
+  }
+}
+
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', async () => {
   initTelegramUser();
