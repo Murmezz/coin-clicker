@@ -16,9 +16,4 @@
       "dest": "api/$1"
     }
   ]
-{
-  "kvStorage": {
-    "restApiUrl": "https://your-kv-endpoint.vercel-storage.com",
-    "restApiToken": "prj_dD9HlQIC7Hm4gQzMWodx995fK71G"
-  }
 }
