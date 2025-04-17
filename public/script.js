@@ -18,37 +18,32 @@ let currentUsername = '';
 
 // Получаем данные из Telegram
 function initTelegramUser() {
-  if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+  if (tg.initDataUnsafe?.user) {
     const tgUser = tg.initDataUnsafe.user;
     USER_ID = `tg_${tgUser.id}`;
-    currentUsername = `@${tgUser.username || tgUser.first_name}`;
-    localStorage.setItem('user_id', USER_ID);
+    currentUsername = tgUser.username ? `@${tgUser.username}` : `@user_${tgUser.id.slice(0, 5)}`;
+    console.log("Telegram User:", USER_ID, currentUsername);
   } else {
-    // Режим тестирования (если запущено не в Telegram)
-    USER_ID = localStorage.getItem('user_id') || 'user_' + Math.random().toString(36).substr(2, 9);
-    currentUsername = `@user_${Math.random().toString(36).substr(2, 5)}`;
-    localStorage.setItem('user_id', USER_ID);
+    console.warn("Не работает в Telegram, используем тестовый режим");
+    USER_ID = 'test_' + Math.random().toString(36).substr(2, 9);
+    currentUsername = `@test_${Math.random().toString(36).substr(2, 5)}`;
   }
+  localStorage.setItem('user_id', USER_ID);
 }
 
-// Остальные переменные и элементы
+// Инициализация игры
 let coins = 0;
 let highscore = 0;
 let transferHistory = [];
-const coinContainer = document.getElementById('coin');
-const coinsDisplay = document.getElementById('coins');
-const highscoreDisplay = document.getElementById('highscore');
 
-// Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTelegramUser();
-  loadUserData();
+  await loadUserData();
   initEventListeners();
+  console.log("Инициализация завершена");
 });
 
-// ========================
-// РАБОТА С FIREBASE
-// ========================
+// ============= Firebase функции =============
 
 async function loadUserData() {
   try {
@@ -59,21 +54,10 @@ async function loadUserData() {
       coins = data.balance || 100;
       highscore = data.highscore || 0;
       transferHistory = data.transfers || [];
-      
-      // Обновляем username если его нет
-      if (!data.username && currentUsername) {
-        await db.ref(`users/${USER_ID}/username`).set(currentUsername);
-      }
+      console.log("Данные загружены:", data);
     } else {
-      // Создаем нового пользователя
-      await db.ref(`users/${USER_ID}`).set({
-        balance: 100,
-        highscore: 0,
-        transfers: [],
-        username: currentUsername
-      });
+      await createNewUser();
     }
-    
     updateDisplays();
   } catch (error) {
     console.error("Ошибка загрузки:", error);
@@ -82,80 +66,17 @@ async function loadUserData() {
   }
 }
 
-async function saveUserData() {
-  try {
-    await db.ref(`users/${USER_ID}`).update({
-      balance: coins,
-      highscore: highscore,
-      transfers: transferHistory
-    });
-  } catch (error) {
-    console.error("Ошибка сохранения:", error);
-  }
-}
-
-async function transferCoins(recipientUsername, amount) {
-  try {
-    // Проверка на перевод самому себе
-    if (recipientUsername === currentUsername) {
-      return { success: false, message: 'Нельзя перевести себе' };
-    }
-
-    // Поиск получателя
-    const usersSnapshot = await db.ref('users').once('value');
-    let recipientId = null;
-    let recipientData = null;
-    
-    usersSnapshot.forEach((childSnapshot) => {
-      if (childSnapshot.val().username === recipientUsername) {
-        recipientId = childSnapshot.key;
-        recipientData = childSnapshot.val();
-      }
-    });
-
-    if (!recipientId) {
-      return { success: false, message: 'Пользователь не найден' };
-    }
-
-    // Обновление балансов
-    const updates = {};
-    updates[`users/${USER_ID}/balance`] = coins - amount;
-    updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
-    
-    // Добавление в историю
-    const transferData = {
-      type: 'outgoing',
-      username: recipientUsername,
-      amount: amount,
-      date: new Date().toISOString()
-    };
-    
-    const recipientTransferData = {
-      type: 'incoming',
-      username: currentUsername,
-      amount: amount,
-      date: new Date().toISOString()
-    };
-    
-    updates[`users/${USER_ID}/transfers`] = [...transferHistory, transferData];
-    updates[`users/${recipientId}/transfers`] = [...(recipientData.transfers || []), recipientTransferData];
-    
-    await db.ref().update(updates);
-    return { success: true };
-    
-  } catch (error) {
-    console.error("Ошибка перевода:", error);
-    return { success: false, message: 'Ошибка сервера' };
-  }
-}
-    
-    updateDisplays();
-    renderTransferHistory();
-  } catch (error) {
-    console.error("Ошибка загрузки:", error);
-    coins = 100;
-    updateDisplays();
-  }
+async function createNewUser() {
+  const userData = {
+    balance: 100,
+    highscore: 0,
+    transfers: [],
+    username: currentUsername,
+    created_at: firebase.database.ServerValue.TIMESTAMP
+  };
+  
+  await db.ref(`users/${USER_ID}`).set(userData);
+  console.log("Создан новый пользователь:", userData);
 }
 
 async function saveUserData() {
@@ -163,72 +84,76 @@ async function saveUserData() {
     await db.ref(`users/${USER_ID}`).update({
       balance: coins,
       highscore: highscore,
-      transfers: transferHistory
+      transfers: transferHistory.slice(0, 50) // Ограничиваем историю
     });
+    console.log("Данные сохранены");
   } catch (error) {
     console.error("Ошибка сохранения:", error);
   }
 }
 
-async function transferCoins(recipientUsername, amount) {
-  try {
-    // Поиск получателя
-    const usersSnapshot = await db.ref('users').once('value');
-    let recipientId = null;
-    let recipientData = null;
-    
-    usersSnapshot.forEach((childSnapshot) => {
-      if (childSnapshot.val().username === recipientUsername) {
-        recipientId = childSnapshot.key;
-        recipientData = childSnapshot.val();
-      }
-    });
+// ============= Игровые функции =============
 
-    if (!recipientId) {
-      return { success: false, message: 'Пользователь не найден' };
-    }
+function initEventListeners() {
+  // Клик по монете
+  const coin = document.querySelector('.coin-button');
+  coin.addEventListener('mousedown', handleCoinPress);
+  coin.addEventListener('touchstart', handleTouchStart, { passive: false });
+  coin.addEventListener('mouseup', handleCoinRelease);
+  coin.addEventListener('touchend', handleTouchEnd);
+  coin.addEventListener('click', handleCoinClick);
 
-    // Обновление балансов
-    const updates = {};
-    updates[`users/${USER_ID}/balance`] = coins - amount;
-    updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
-    
-    // Добавление в историю
-    const transferData = {
-      type: 'outgoing',
-      username: recipientUsername,
-      amount: amount,
-      date: new Date().toISOString()
-    };
-    
-    const recipientTransferData = {
-      type: 'incoming',
-      username: currentUsername,
-      amount: amount,
-      date: new Date().toISOString()
-    };
-    
-    updates[`users/${USER_ID}/transfers`] = [...transferHistory, transferData];
-    updates[`users/${recipientId}/transfers`] = [...(recipientData.transfers || []), recipientTransferData];
-    
-    await db.ref().update(updates);
-    return { success: true };
-    
-  } catch (error) {
-    console.error("Ошибка перевода:", error);
-    return { success: false, message: 'Ошибка сервера' };
-  }
+  // Навигация
+  document.querySelectorAll('.nav-button').forEach(btn => {
+    btn.addEventListener('click', handleNavButtonClick);
+  });
 }
 
-// ========================
-// ОСНОВНЫЕ ФУНКЦИИ ИГРЫ
-// ========================
+function handleCoinPress(e) {
+  e.preventDefault();
+  const coin = document.querySelector('.coin-button');
+  coin.style.transform = 'scale(0.95)';
+}
+
+function handleCoinRelease(e) {
+  e.preventDefault();
+  const coin = document.querySelector('.coin-button');
+  coin.style.transform = 'scale(1)';
+}
+
+function handleCoinClick(e) {
+  coins++;
+  if (coins > highscore) {
+    highscore = coins;
+  }
+  updateDisplays();
+  saveUserData();
+  createFloatingNumber(e.clientX, e.clientY);
+}
+
+function handleTouchStart(e) {
+  e.preventDefault();
+  handleCoinPress(e);
+}
+
+function handleTouchEnd(e) {
+  e.preventDefault();
+  handleCoinRelease(e);
+  handleCoinClick({
+    clientX: e.changedTouches[0].clientX,
+    clientY: e.changedTouches[0].clientY
+  });
+}
 
 function updateDisplays() {
   coinsDisplay.textContent = coins;
   highscoreDisplay.textContent = highscore;
 }
 
+// ============= Остальные функции =============
+
+// Добавьте сюда остальные функции (переводы, навигация и т.д.)
+// из предыдущего примера, они остаются без изменений
 function initEventListeners() {
   // Клик по монете
   coinContainer.addEventListener('mousedown', handleCoinPress);
