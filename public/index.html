@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Coin Clicker</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="balance">Баланс: <span id="coins">0</span></div>
-        
+
         <div class="buttons-container">
             <div class="button-row first-row">
                 <button class="nav-button" data-page="top">Топ</button>
@@ -31,7 +33,6 @@
         </div>
 
         <div id="pages-container">
-            <!-- Шаблон для страницы перевода -->
             <div class="page" id="transfer-page">
                 <div class="page-header">
                     <button class="back-button">←</button>
@@ -43,11 +44,14 @@
                         <input type="number" id="amount" placeholder="Сумма" min="1" class="transfer-input">
                         <button id="send-coins" class="transfer-button">Отправить</button>
                         <div id="transfer-message" class="transfer-message"></div>
+                        <div class="transfer-history" id="transfer-history">
+                            <h3>История переводов</h3>
+                            <div class="history-list" id="history-list"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Шаблон для других страниц -->
+
             <div class="page" id="default-page">
                 <div class="page-header">
                     <button class="back-button">←</button>
