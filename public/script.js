@@ -53,7 +53,7 @@ async function loadUserData() {
     db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        coins = data.balance || 100;
+        coins = data.balance || 0; // Начальный баланс 0
         highscore = data.highscore || 0;
         transferHistory = data.transfers || [];
         console.log('User data loaded:', data);
@@ -72,7 +72,7 @@ async function loadUserData() {
 // Создание нового пользователя
 async function createNewUser() {
   const userData = {
-    balance: 100,
+    balance: 0, // Начальный баланс 0
     highscore: 0,
     transfers: [],
     username: currentUsername,
@@ -117,7 +117,7 @@ function initEventListeners() {
     console.error('Coin button not found');
   }
 
-  // Навигация
+ Навигация
   const navButtons = document.querySelectorAll('.nav-button');
   if (navButtons) {
     navButtons.forEach(button => {
@@ -126,156 +126,6 @@ function initEventListeners() {
   } else {
     console.error('Navigation buttons not found');
   }
-}
-
-// Обработка нажатия на кнопки навигации
-function handleNavButtonClick() {
-  const pageName = this.getAttribute('data-page');
-  switch (pageName) {
-    case 'top':
-      showDefaultPage('Топ игроков');
-      break;
-    case 'shop':
-      showDefaultPage('Магазин');
-      break;
-    case 'games':
-      showDefaultPage('Игры');
-      break;
-    case 'transfer':
-      showTransferPage();
-      break;
-    case 'referrals':
-      showDefaultPage('Рефералы');
-      break;
-    default:
-      showDefaultPage(this.textContent);
-  }
-}
-
-// Показ страницы перевода
-function showTransferPage() {
-  pagesContainer.innerHTML = '';
-  const page = transferPage.cloneNode(true);
-  pagesContainer.appendChild(page);
-  pagesContainer.style.display = 'block';
-
-  // Инициализация формы перевода
-  const sendButton = page.querySelector('#send-coins');
-  const usernameInput = page.querySelector('#username');
-  const amountInput = page.querySelector('#amount');
-  const messageDiv = page.querySelector('#transfer-message');
-
-  sendButton.addEventListener('click', async () => {
-    const recipient = usernameInput.value.trim();
-    const amount = parseInt(amountInput.value);
-
-    if (!recipient || !recipient.startsWith('@')) {
-      showMessage('Введите корректный @username', 'error', messageDiv);
-      return;
-    }
-
-    if (isNaN(amount) || amount < 1) {
-      showMessage('Введите сумму больше 0', 'error', messageDiv);
-      return;
-    }
-
-    if (amount > coins) {
-      showMessage('Недостаточно коинов', 'error', messageDiv);
-      return;
-    }
-
-    try {
-      sendButton.disabled = true;
-      showMessage('Отправка...', 'info', messageDiv);
-
-      const response = await transferCoins(recipient, amount);
-
-      if (response.success) {
-        coins -= amount;
-        updateDisplays();
-        showMessage(`Успешно отправлено ${amount} коинов`, 'success', messageDiv);
-      } else {
-        showMessage(response.message || 'Ошибка перевода', 'error', messageDiv);
-      }
-    } catch (error) {
-      showMessage('Ошибка сети', 'error', messageDiv);
-      console.error('Transfer error:', error);
-    } finally {
-      sendButton.disabled = false;
-    }
-  });
-
-  // Кнопка "Назад"
-  page.querySelector('.back-button').addEventListener('click', hidePages);
-
-  // Показ истории переводов
-  renderTransferHistory();
-}
-
-// Показ стандартной страницы
-function showDefaultPage(title) {
-  pagesContainer.innerHTML = '';
-  const page = defaultPage.cloneNode(true);
-  page.querySelector('.page-title').textContent = title;
-  pagesContainer.appendChild(page);
-  pagesContainer.style.display = 'block';
-
-  // Кнопка "Назад"
-  page.querySelector('.back-button').addEventListener('click', hidePages);
-}
-
-// Скрытие всех страниц
-function hidePages() {
-  pagesContainer.style.display = 'none';
-}
-
-// Показ сообщения
-function showMessage(text, type, element) {
-  element.textContent = text;
-  element.className = `transfer-message ${type}-message`;
-}
-
-// Рендер истории переводов
-function renderTransferHistory() {
-  const historyContainer = document.getElementById('history-list');
-  if (!historyContainer) return;
-
-  historyContainer.innerHTML = '';
-
-  if (transferHistory.length === 0) {
-    historyContainer.innerHTML = '<p>Нет истории переводов</p>';
-    return;
-  }
-
-  transferHistory.slice(0, 10).forEach(transfer => {
-    const item = document.createElement('div');
-    item.className = `history-item ${transfer.type}`;
-
-    const amountPrefix = transfer.type === 'outgoing' ? '-' : '+';
-    const amountClass = transfer.type === 'outgoing' ? 'history-amount outgoing' : 'history-amount incoming';
-
-    item.innerHTML = `
-      <div>
-        <span class="history-username">${transfer.username}</span>
-        <span class="history-date">${formatDate(transfer.date)}</span>
-      </div>
-      <span class="${amountClass}">${amountPrefix}${transfer.amount}</span>
-    `;
-
-    historyContainer.appendChild(item);
-  });
-}
-
-// Форматирование даты
-function formatDate(isoString) {
-  const date = new Date(isoString);
-  return date.toLocaleString('ru-RU', {
-    day: 'numeric',
-    month: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
 }
 
 // Функция для перевода коинов
