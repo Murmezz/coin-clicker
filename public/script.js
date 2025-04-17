@@ -117,7 +117,7 @@ function initEventListeners() {
     console.error('Coin button not found');
   }
 
- Навигация
+ //Навигация
   const navButtons = document.querySelectorAll('.nav-button');
   if (navButtons) {
     navButtons.forEach(button => {
