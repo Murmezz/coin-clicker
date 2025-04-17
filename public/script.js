@@ -190,7 +190,7 @@ function showTransferPage() {
         coins -= amount;
         updateDisplays();
         showMessage(`Успешно отправлено ${amount} коинов`, 'success', messageDiv);
-      rollout else {
+      } else {
         showMessage(response.message || 'Ошибка перевода', 'error', messageDiv);
       }
     } catch (error) {
