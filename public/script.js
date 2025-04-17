@@ -1,4 +1,4 @@
-// Конфигурация Firebase (ваши данные)
+// Конфигурация Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
   authDomain: "fastcoin-7db18.firebaseapp.com",
@@ -9,35 +9,45 @@ const firebaseConfig = {
   appId: "1:1024804439259:web:351a470a824712c494f8fe"
 };
 
-// Инициализация Firebase
+// Инициализация
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const tg = window.Telegram.WebApp;
+let USER_ID = '';
+let currentUsername = '';
 
-// Генерация ID пользователя
-const USER_ID = localStorage.getItem('user_id') || 'user_' + Math.random().toString(36).substr(2, 9);
-localStorage.setItem('user_id', USER_ID);
+// Получаем данные из Telegram
+function initTelegramUser() {
+  if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    const tgUser = tg.initDataUnsafe.user;
+    USER_ID = `tg_${tgUser.id}`;
+    currentUsername = `@${tgUser.username || tgUser.first_name}`;
+    localStorage.setItem('user_id', USER_ID);
+  } else {
+    // Режим тестирования (если запущено не в Telegram)
+    USER_ID = localStorage.getItem('user_id') || 'user_' + Math.random().toString(36).substr(2, 9);
+    currentUsername = `@user_${Math.random().toString(36).substr(2, 5)}`;
+    localStorage.setItem('user_id', USER_ID);
+  }
+}
 
-// Данные игры
+// Остальные переменные и элементы
 let coins = 0;
 let highscore = 0;
 let transferHistory = [];
-let currentUsername = '';
-
-// Элементы интерфейса
 const coinContainer = document.getElementById('coin');
 const coinsDisplay = document.getElementById('coins');
 const highscoreDisplay = document.getElementById('highscore');
-const pagesContainer = document.getElementById('pages-container');
-const transferPage = document.getElementById('transfer-page');
-const defaultPage = document.getElementById('default-page');
-const historyList = document.getElementById('history-list');
 
-// Инициализация
-loadUserData();
-initEventListeners();
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+  initTelegramUser();
+  loadUserData();
+  initEventListeners();
+});
 
 // ========================
-// ФУНКЦИИ РАБОТЫ С FIREBASE
+// РАБОТА С FIREBASE
 // ========================
 
 async function loadUserData() {
@@ -49,14 +59,13 @@ async function loadUserData() {
       coins = data.balance || 100;
       highscore = data.highscore || 0;
       transferHistory = data.transfers || [];
-      currentUsername = data.username || `@user_${Math.random().toString(36).substr(2, 5)}`;
       
-      if (!data.username) {
+      // Обновляем username если его нет
+      if (!data.username && currentUsername) {
         await db.ref(`users/${USER_ID}/username`).set(currentUsername);
       }
     } else {
       // Создаем нового пользователя
-      currentUsername = `@user_${Math.random().toString(36).substr(2, 5)}`;
       await db.ref(`users/${USER_ID}`).set({
         balance: 100,
         highscore: 0,
@@ -64,6 +73,81 @@ async function loadUserData() {
         username: currentUsername
       });
     }
+    
+    updateDisplays();
+  } catch (error) {
+    console.error("Ошибка загрузки:", error);
+    coins = 100;
+    updateDisplays();
+  }
+}
+
+async function saveUserData() {
+  try {
+    await db.ref(`users/${USER_ID}`).update({
+      balance: coins,
+      highscore: highscore,
+      transfers: transferHistory
+    });
+  } catch (error) {
+    console.error("Ошибка сохранения:", error);
+  }
+}
+
+async function transferCoins(recipientUsername, amount) {
+  try {
+    // Проверка на перевод самому себе
+    if (recipientUsername === currentUsername) {
+      return { success: false, message: 'Нельзя перевести себе' };
+    }
+
+    // Поиск получателя
+    const usersSnapshot = await db.ref('users').once('value');
+    let recipientId = null;
+    let recipientData = null;
+    
+    usersSnapshot.forEach((childSnapshot) => {
+      if (childSnapshot.val().username === recipientUsername) {
+        recipientId = childSnapshot.key;
+        recipientData = childSnapshot.val();
+      }
+    });
+
+    if (!recipientId) {
+      return { success: false, message: 'Пользователь не найден' };
+    }
+
+    // Обновление балансов
+    const updates = {};
+    updates[`users/${USER_ID}/balance`] = coins - amount;
+    updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
+    
+    // Добавление в историю
+    const transferData = {
+      type: 'outgoing',
+      username: recipientUsername,
+      amount: amount,
+      date: new Date().toISOString()
+    };
+    
+    const recipientTransferData = {
+      type: 'incoming',
+      username: currentUsername,
+      amount: amount,
+      date: new Date().toISOString()
+    };
+    
+    updates[`users/${USER_ID}/transfers`] = [...transferHistory, transferData];
+    updates[`users/${recipientId}/transfers`] = [...(recipientData.transfers || []), recipientTransferData];
+    
+    await db.ref().update(updates);
+    return { success: true };
+    
+  } catch (error) {
+    console.error("Ошибка перевода:", error);
+    return { success: false, message: 'Ошибка сервера' };
+  }
+}
     
     updateDisplays();
     renderTransferHistory();
