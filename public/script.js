@@ -124,35 +124,42 @@ function initEventListeners() {
   }
 }
 
-// Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', async () => {
-  initTelegramUser();
-  await loadUserData();
-  initEventListeners();
-  console.log('Initialization complete');
-});
-
-// Обработчики навигации
+// Обработка нажатия на кнопки навигации
 function handleNavButtonClick() {
   const pageName = this.getAttribute('data-page');
-  if (pageName === 'transfer') showTransferPage();
-  else showDefaultPage(this.textContent);
+  switch (pageName) {
+    case 'top':
+      showDefaultPage('Топ игроков');
+      break;
+    case 'shop':
+      showDefaultPage('Магазин');
+      break;
+    case 'games':
+      showDefaultPage('Игры');
+      break;
+    case 'transfer':
+      showTransferPage();
+      break;
+    case 'referrals':
+      showDefaultPage('Рефералы');
+      break;
+    default:
+      showDefaultPage(this.textContent);
+  }
 }
 
+// Показ страницы перевода
 function showTransferPage() {
   pagesContainer.innerHTML = '';
-  pagesContainer.appendChild(transferPage.cloneNode(true));
+  const page = transferPage.cloneNode(true);
+  pagesContainer.appendChild(page);
   pagesContainer.style.display = 'block';
 
-  initTransferForm();
-  document.querySelector('.back-button').addEventListener('click', hidePages);
-}
-
-function initTransferForm() {
-  const usernameInput = document.getElementById('username');
-  const amountInput = document.getElementById('amount');
-  const sendButton = document.getElementById('send-coins');
-  const messageDiv = document.getElementById('transfer-message');
+  // Инициализация формы перевода
+  const sendButton = page.querySelector('#send-coins');
+  const usernameInput = page.querySelector('#username');
+  const amountInput = page.querySelector('#amount');
+  const messageDiv = page.querySelector('#transfer-message');
 
   sendButton.addEventListener('click', async () => {
     const recipient = usernameInput.value.trim();
@@ -183,7 +190,7 @@ function initTransferForm() {
         coins -= amount;
         updateDisplays();
         showMessage(`Успешно отправлено ${amount} коинов`, 'success', messageDiv);
-      } else {
+      rollout else {
         showMessage(response.message || 'Ошибка перевода', 'error', messageDiv);
       }
     } catch (error) {
@@ -193,16 +200,46 @@ function initTransferForm() {
       sendButton.disabled = false;
     }
   });
+
+  // Кнопка "Назад"
+  page.querySelector('.back-button').addEventListener('click', hidePages);
+
+  // Показ истории переводов
+  renderTransferHistory();
 }
 
-function renderTransferHistory() {
-  const historyList = document.getElementById('history-list');
-  if (!historyList) return;
+// Показ стандартной страницы
+function showDefaultPage(title) {
+  pagesContainer.innerHTML = '';
+  const page = defaultPage.cloneNode(true);
+  page.querySelector('.page-title').textContent = title;
+  pagesContainer.appendChild(page);
+  pagesContainer.style.display = 'block';
 
-  historyList.innerHTML = '';
+  // Кнопка "Назад"
+  page.querySelector('.back-button').addEventListener('click', hidePages);
+}
+
+// Скрытие всех страниц
+function hidePages() {
+  pagesContainer.style.display = 'none';
+}
+
+// Показ сообщения
+function showMessage(text, type, element) {
+  element.textContent = text;
+  element.className = `transfer-message ${type}-message`;
+}
+
+// Рендер истории переводов
+function renderTransferHistory() {
+  const historyContainer = document.getElementById('history-list');
+  if (!historyContainer) return;
+
+  historyContainer.innerHTML = '';
 
   if (transferHistory.length === 0) {
-    historyList.innerHTML = '<p>Нет истории переводов</p>';
+    historyContainer.innerHTML = '<p>Нет истории переводов</p>';
     return;
   }
 
@@ -221,10 +258,11 @@ function renderTransferHistory() {
       <span class="${amountClass}">${amountPrefix}${transfer.amount}</span>
     `;
 
-    historyList.appendChild(item);
+    historyContainer.appendChild(item);
   });
 }
 
+// Форматирование даты
 function formatDate(isoString) {
   const date = new Date(isoString);
   return date.toLocaleString('ru-RU', {
@@ -236,22 +274,10 @@ function formatDate(isoString) {
   });
 }
 
-function showDefaultPage(title) {
-  const newPage = defaultPage.cloneNode(true);
-  newPage.querySelector('.page-title').textContent = title;
-
-  pagesContainer.innerHTML = '';
-  pagesContainer.appendChild(newPage);
-  pagesContainer.style.display = 'block';
-
-  newPage.querySelector('.back-button').addEventListener('click', hidePages);
-}
-
-function hidePages() {
-  pagesContainer.style.display = 'none';
-}
-
-function showMessage(text, type, element) {
-  element.textContent = text;
-  element.className = `transfer-message ${type}-message`;
-}
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', async () => {
+  initTelegramUser();
+  await loadUserData();
+  initEventListeners();
+  console.log('Initialization complete');
+});
