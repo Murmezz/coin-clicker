@@ -68,7 +68,14 @@ async function loadUserData() {
         const data = snapshot.val();
         coins = data.balance || 0; // Начальный баланс 0
         highscore = data.highscore || 0;
-        transferHistory = data.transfers || [];
+
+        // Преобразуем transferHistory в массив, если это объект
+        if (data.transfers && typeof data.transfers === 'object') {
+          transferHistory = Object.values(data.transfers);
+        } else {
+          transferHistory = [];
+        }
+
         console.log('User data loaded:', data);
       } else {
         createNewUser();
@@ -80,6 +87,8 @@ async function loadUserData() {
       reject(error);
     });
   });
+}
+);
 }
 
 // Создание нового пользователя
@@ -258,6 +267,11 @@ async function transferCoins(recipientUsername, amount) {
       date: new Date().toISOString()
     };
 
+    // Убедимся, что transferHistory — это массив
+    if (!Array.isArray(transferHistory)) {
+      transferHistory = [];
+    }
+
     await db.ref(`users/${USER_ID}/transfers`).push(transferRecord);
 
     return { success: true };
@@ -266,6 +280,7 @@ async function transferCoins(recipientUsername, amount) {
     return { success: false, message: 'Ошибка сети' };
   }
 }
+
 
 // Скрыть все страницы
 function hidePages() {
@@ -284,11 +299,13 @@ function renderTransferHistory(historyContainer) {
 
   historyContainer.innerHTML = '';
 
-  if (transferHistory.length === 0) {
+  // Проверяем, что transferHistory — это массив
+  if (!Array.isArray(transferHistory) || transferHistory.length === 0) {
     historyContainer.innerHTML = '<p>Нет истории переводов</p>';
     return;
   }
 
+  // Ограничиваем количество записей до 10
   transferHistory.slice(0, 10).forEach(transfer => {
     const item = document.createElement('div');
     item.className = `history-item ${transfer.type}`;
@@ -307,6 +324,7 @@ function renderTransferHistory(historyContainer) {
     historyContainer.appendChild(item);
   });
 }
+
 
 // Форматирование даты
 function formatDate(isoString) {
