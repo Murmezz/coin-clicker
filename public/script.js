@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Конфигурация
-    const API_URL = 'https://coin-clicker-34qzhkrf9-murmezzs-projects.vercel.app/api'; // Используем относительный путь для Vercel
+    const API_URL = 'prj_dD9HlQIC7Hm4gQzMWodx995fK71G'; // Используем относительный путь для Vercel
     const USER_ID = 'user_' + Math.random().toString(36).substr(2, 9); // Генерация ID пользователя
 
     // Элементы интерфейса
