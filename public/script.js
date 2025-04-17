@@ -44,7 +44,6 @@ function initTelegramUser() {
     currentUsername = `@dev_${Math.random().toString(36).substr(2, 5)}`;
     console.log('Test user created:', USER_ID, currentUsername);
   }
-  localStorage.setItem('user_id', USER_ID);
 }
 
 // Загрузка данных пользователя
@@ -80,21 +79,7 @@ async function createNewUser() {
   };
   await db.ref(`users/${USER_ID}`).set(userData);
   console.log('New user created:', userData);
-}
-
-// Сохранение данных
-async function saveUserData() {
-  try {
-    await db.ref(`users/${USER_ID}`).update({
-      balance: coins,
-      highscore: highscore,
-      transfers: transferHistory
-    });
-    console.log('Data saved');
-  } catch (error) {
-    console.error('Error saving data:', error);
-  }
-}
+}.
 
 // Обновление интерфейса
 function updateDisplays() {
@@ -117,57 +102,143 @@ function initEventListeners() {
     console.error('Coin button not found');
   }
 
- //Навигация
+  // Навигация
   const navButtons = document.querySelectorAll('.nav-button');
   if (navButtons) {
     navButtons.forEach(button => {
-      button.addEventListener('click', handleNavButtonClick);
+      button.addEventListener('click', () => handleNavButtonClick(button));
     });
   } else {
     console.error('Navigation buttons not found');
   }
 }
 
-// Функция для перевода коинов
-async function transferCoins(recipientUsername, amount) {
-  try {
-    // Найти ID получателя по его username
-    const recipientSnapshot = await db.ref('users').orderByChild('username').equalTo(recipientUsername).once('value');
+// Обработка нажатия на кнопки навигации
+function handleNavButtonClick(button) {
+  const pageName = button.getAttribute('data-page');
+  switch (pageName) {
+    case 'top':
+      showDefaultPage('Топ игроков');
+      break;
+    case 'shop':
+      showDefaultPage('Магазин');
+      break;
+    case 'games':
+      showDefaultPage('Игры');
+      break;
+    case 'transfer':
+      showTransferPage();
+      break;
+    case 'referrals':
+      showDefaultPage('Рефералы');
+      break;
+    default:
+      showDefaultPage(button.textContent);
+  }
+}
 
-    if (!recipientSnapshot.exists()) {
-      return { success: false, message: 'Пользователь не найден' };
+// Показ страницы перевода
+function showTransferPage() {
+  pagesContainer.innerHTML = '';
+  const page = transferPage.cloneNode(true);
+  pagesContainer.appendChild(page);
+  pagesContainer.style.display = 'block';
+
+  // Инициализация формы перевода
+  const sendButton = page.querySelector('#send-coins');
+  const usernameInput = page.querySelector('#username');
+  const amountInput = page.querySelector('#amount');
+  const messageDiv = page.querySelector('#transfer-message');
+  const historyList = page.querySelector('#history-list'); // Добавлено
+
+  sendButton.addEventListener('click', async () => {
+    const recipient = usernameInput.value.trim();
+    const amount = parseInt(amountInput.value);
+
+    if (!recipient || !recipient.startsWith('@')) {
+      showMessage('Введите корректный @username', 'error', messageDiv);
+      return;
     }
 
-    // Получить данные получателя
-    const recipientData = recipientSnapshot.val();
-    const recipientId = Object.keys(recipientData)[0];
-    const recipientBalance = recipientData[recipientId].balance || 0;
+    if (isNaN(amount) || amount < 1) {
+      showMessage('Введите сумму больше 0', 'error', messageDiv);
+      return;
+    }
 
-    // Обновить баланс получателя
-    await db.ref(`users/${recipientId}`).update({
-      balance: recipientBalance + amount
-    });
+    if (amount > coins) {
+      showMessage('Недостаточно коинов', 'error', messageDiv);
+      return;
+    }
 
-    // Обновить баланс отправителя
-    await db.ref(`users/${USER_ID}`).update({
-      balance: coins - amount
-    });
+    try {
+      sendButton.disabled = true;
+      showMessage('Отправка...', 'info', messageDiv);
 
-    // Добавить запись в историю переводов
-    const transferRecord = {
-      type: 'outgoing',
-      username: recipientUsername,
-      amount: amount,
-      date: new Date().toISOString()
-    };
+      const response = await transferCoins(recipient, amount);
 
-    await db.ref(`users/${USER_ID}/transfers`).push(transferRecord);
+      if (response.success) {
+        coins -= amount;
+        updateDisplays();
+        showMessage(`Успешно отправлено ${amount} коинов`, 'success', messageDiv);
+        renderTransferHistory(historyList); // Обновляем историю переводов
+      } else {
+        showMessage(response.message || 'Ошибка перевода', 'error', messageDiv);
+      }
+    } catch (error) {
+      showMessage('Ошибка сети', 'error', messageDiv);
+      console.error('Transfer error:', error);
+    } finally {
+      sendButton.disabled = false;
+    }
+  });
 
-    return { success: true };
-  } catch (error) {
-    console.error('Transfer error:', error);
-    return { success: false, message: 'Ошибка сети' };
+  // Кнопка "Назад"
+  page.querySelector('.back-button').addEventListener('click', hidePages);
+
+  // Показ истории переводов
+  renderTransferHistory(historyList);
+}
+
+// Рендер истории переводов
+function renderTransferHistory(historyContainer) { // Добавлен аргумент
+  if (!historyContainer) return;
+
+  historyContainer.innerHTML = '';
+
+  if (transferHistory.length === 0) {
+    historyContainer.innerHTML = '<p>Нет истории переводов</p>';
+    return;
   }
+
+  transferHistory.slice(0, 10).forEach(transfer => {
+    const item = document.createElement('div');
+    item.className = `history-item ${transfer.type}`;
+
+    const amountPrefix = transfer.type === 'outgoing' ? '-' : '+';
+    const amountClass = transfer.type === 'outgoing' ? 'history-amount outgoing' : 'history-amount incoming';
+
+    item.innerHTML = `
+      <div>
+        <span class="history-username">${transfer.username}</span>
+        <span class="history-date">${formatDate(transfer.date)}</span>
+      </div>
+      <span class="${amountClass}">${amountPrefix}${transfer.amount}</span>
+    `;
+
+    historyContainer.appendChild(item);
+  });
+}
+
+// Форматирование даты
+function formatDate(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 // Инициализация при загрузке
