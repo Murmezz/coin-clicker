@@ -47,11 +47,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadUserData() {
   try {
-    const snapshot = await db.ref(`users/${USER_ID}`).on('value');
-    
+    const snapshot = await db.ref(`users/${USER_ID}`).once('value');
     if (snapshot.exists()) {
       const data = snapshot.val();
-      coins = data.balance || 100;
+      // Проверяем, что данные корректны
+      coins = data.balance !== undefined ? data.balance : 100;
       highscore = data.highscore || 0;
       transferHistory = data.transfers || [];
       console.log("Данные загружены:", data);
@@ -61,7 +61,7 @@ async function loadUserData() {
     updateDisplays();
   } catch (error) {
     console.error("Ошибка загрузки:", error);
-    coins = 100;
+    coins = 100; // дефолт
     updateDisplays();
   }
 }
