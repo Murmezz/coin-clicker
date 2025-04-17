@@ -8,12 +8,11 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
-      "dest": "public/$1"
-    },
-    {
       "src": "/api/(.*)",
       "dest": "api/$1"
     }
-  ]
+  ],
+  "storage": {
+    "blob": true
+  }
 }
