@@ -9,33 +9,39 @@ const firebaseConfig = {
   appId: "1:1024804439259:web:351a470a824712c494f8fe"
 };
 
-// Инициализация
-const app = firebase.initializeApp(firebaseConfig);
+// Инициализация Firebase
+firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+// Получение элементов DOM
+const coinsDisplay = document.getElementById('coins');
+const highscoreDisplay = document.getElementById('highscore');
+const coinContainer = document.getElementById('coin');
+const pagesContainer = document.getElementById('pages-container');
+
 const tg = window.Telegram.WebApp;
 let USER_ID = '';
 let currentUsername = '';
 
-// Получаем данные из Telegram
+let coins = 0;
+let highscore = 0;
+let transferHistory = [];
+
+// Получение данных из Telegram
 function initTelegramUser() {
   if (tg.initDataUnsafe?.user) {
     const tgUser = tg.initDataUnsafe.user;
     USER_ID = `tg_${tgUser.id}`;
     currentUsername = tgUser.username ? `@${tgUser.username}` : `@user_${tgUser.id.slice(0, 5)}`;
-    console.log("Telegram User:", USER_ID, currentUsername);
   } else {
-    console.warn("Не работает в Telegram, используем тестовый режим");
     USER_ID = 'test_' + Math.random().toString(36).substr(2, 9);
     currentUsername = `@test_${Math.random().toString(36).substr(2, 5)}`;
+    console.warn("Не работает в Telegram, используем тестовый режим");
   }
   localStorage.setItem('user_id', USER_ID);
 }
 
 // Инициализация игры
-let coins = 0;
-let highscore = 0;
-let transferHistory = [];
-
 document.addEventListener('DOMContentLoaded', async () => {
   initTelegramUser();
   await loadUserData();
@@ -50,18 +56,16 @@ async function loadUserData() {
     const snapshot = await db.ref(`users/${USER_ID}`).once('value');
     if (snapshot.exists()) {
       const data = snapshot.val();
-      // Проверяем, что данные корректны
       coins = data.balance !== undefined ? data.balance : 100;
       highscore = data.highscore || 0;
       transferHistory = data.transfers || [];
-      console.log("Данные загружены:", data);
     } else {
       await createNewUser();
     }
     updateDisplays();
   } catch (error) {
-    console.error("Ошибка загрузки:", error);
-    coins = 100; // дефолт
+    console.error("Ошибка загрузки данных:", error);
+    coins = 100;
     updateDisplays();
   }
 }
@@ -74,7 +78,6 @@ async function createNewUser() {
     username: currentUsername,
     created_at: firebase.database.ServerValue.TIMESTAMP
   };
-  
   await db.ref(`users/${USER_ID}`).set(userData);
   console.log("Создан новый пользователь:", userData);
 }
@@ -84,24 +87,31 @@ async function saveUserData() {
     await db.ref(`users/${USER_ID}`).update({
       balance: coins,
       highscore: highscore,
-      transfers: transferHistory.slice(0, 50) // Ограничиваем историю
+      transfers: transferHistory.slice(0, 50)
     });
     console.log("Данные сохранены");
   } catch (error) {
-    console.error("Ошибка сохранения:", error);
+    console.error("Ошибка сохранения данных:", error);
   }
 }
 
-// ============= Игровые функции =============
+// Обновление отображения
+function updateDisplays() {
+  if (coinsDisplay) coinsDisplay.textContent = coins;
+  if (highscoreDisplay) highscoreDisplay.textContent = highscore;
+}
+
+// =================== Обработка событий ===================
 
 function initEventListeners() {
   // Клик по монете
-  const coin = document.querySelector('.coin-button');
-  coin.addEventListener('mousedown', handleCoinPress);
-  coin.addEventListener('touchstart', handleTouchStart, { passive: false });
-  coin.addEventListener('mouseup', handleCoinRelease);
-  coin.addEventListener('touchend', handleTouchEnd);
-  coin.addEventListener('click', handleCoinClick);
+  if (coinContainer) {
+    coinContainer.addEventListener('mousedown', handleCoinPress);
+    coinContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
+    coinContainer.addEventListener('mouseup', handleCoinRelease);
+    coinContainer.addEventListener('touchend', handleTouchEnd);
+    coinContainer.addEventListener('click', handleCoinClick);
+  }
 
   // Навигация
   document.querySelectorAll('.nav-button').forEach(btn => {
@@ -111,14 +121,18 @@ function initEventListeners() {
 
 function handleCoinPress(e) {
   e.preventDefault();
-  const coin = document.querySelector('.coin-button');
-  coin.style.transform = 'scale(0.95)';
+  const coinButton = document.querySelector('.coin-button');
+  if (coinButton) {
+    coinButton.style.transform = 'scale(0.95)';
+  }
 }
 
 function handleCoinRelease(e) {
   e.preventDefault();
-  const coin = document.querySelector('.coin-button');
-  coin.style.transform = 'scale(1)';
+  const coinButton = document.querySelector('.coin-button');
+  if (coinButton) {
+    coinButton.style.transform = 'scale(1)';
+  }
 }
 
 function handleCoinClick(e) {
@@ -133,138 +147,59 @@ function handleCoinClick(e) {
 
 function handleTouchStart(e) {
   e.preventDefault();
-  handleCoinPress(e);
-}
-
-function handleTouchEnd(e) {
-  e.preventDefault();
-  handleCoinRelease(e);
-  handleCoinClick({
-    clientX: e.changedTouches[0].clientX,
-    clientY: e.changedTouches[0].clientY
-  });
-}
-
-function updateDisplays() {
-  coinsDisplay.textContent = coins;
-  highscoreDisplay.textContent = highscore;
-}
-
-// ============= Остальные функции =============
-
-// Добавьте сюда остальные функции (переводы, навигация и т.д.)
-// из предыдущего примера, они остаются без изменений
-function initEventListeners() {
-  // Клик по монете
-  coinContainer.addEventListener('mousedown', handleCoinPress);
-  coinContainer.addEventListener('touchstart', handleTouchStart);
-  coinContainer.addEventListener('mouseup', handleCoinRelease);
-  coinContainer.addEventListener('touchend', handleTouchEnd);
-
-  // Навигация
-  document.querySelectorAll('.nav-button').forEach(button => {
-    button.addEventListener('click', function() {
-      const pageName = this.getAttribute('data-page');
-      if (pageName === 'transfer') showTransferPage();
-      else showDefaultPage(this.textContent);
-    });
-  });
-}
-
-function handleCoinPress(e) {
-  e.preventDefault();
-  const clientX = e.clientX || e.touches[0].clientX;
-  const clientY = e.clientY || e.touches[0].clientY;
-
-  const rect = coinContainer.getBoundingClientRect();
-  const clickX = clientX - rect.left;
-  const clickY = clientY - rect.top;
-
-  const coinButton = coinContainer.querySelector('.coin-button');
-  const tiltAngle = 12;
-  const relX = (rect.width/2 - clickX) / (rect.width/2);
-  const relY = (rect.height/2 - clickY) / (rect.height/2);
-
-  coinButton.style.transform = `
-    perspective(500px) 
-    rotateX(${relY * tiltAngle}deg) 
-    rotateY(${-relX * tiltAngle}deg) 
-    scale(0.95)
-  `;
-}
-
-function handleCoinRelease(e) {
-  const clientX = e.clientX || e.changedTouches[0].clientX;
-  const clientY = e.clientY || e.changedTouches[0].clientY;
-
-  const coinButton = coinContainer.querySelector('.coin-button');
-  coinButton.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
-
-  coins++;
-  if (coins > highscore) {
-    highscore = coins;
-  }
-
-  updateDisplays();
-  createFloatingNumber(clientX, clientY);
-  saveUserData();
-}
-
-function handleTouchStart(e) {
-  e.preventDefault();
   handleCoinPress(e.touches[0]);
 }
 
 function handleTouchEnd(e) {
   e.preventDefault();
   handleCoinRelease(e.changedTouches[0]);
-}
-
-function createFloatingNumber(startX, startY) {
-  const numberElement = document.createElement('div');
-  numberElement.className = 'floating-number';
-  numberElement.textContent = '+1';
-
-  const balanceRect = document.querySelector('.balance').getBoundingClientRect();
-  const targetX = balanceRect.left + balanceRect.width/2 - startX;
-  const targetY = balanceRect.top - startY;
-
-  numberElement.style.left = `${startX}px`;
-  numberElement.style.top = `${startY}px`;
-  numberElement.style.setProperty('--target-x', `${targetX}px`);
-  numberElement.style.setProperty('--target-y', `${targetY}px`);
-
-  document.body.appendChild(numberElement);
-
-  setTimeout(() => {
-    numberElement.remove();
-  }, 700);
+  handleCoinClick({ clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY });
 }
 
 // ========================
-// СИСТЕМА ПЕРЕВОДОВ
+// СИСТЕМА НАВИГАЦИИ
 // ========================
+
+function handleNavButtonClick() {
+  const pageName = this.getAttribute('data-page');
+  
+  switch(pageName) {
+    case 'transfer':
+      showTransferPage();
+      break;
+    case 'shop':
+      showDefaultPage('Магазин');
+      break;
+    case 'games':
+      showDefaultPage('Игры');
+      break;
+    case 'referrals':
+      showDefaultPage('Рефералы');
+      break;
+    case 'top':
+      showDefaultPage('Топ игроков');
+      break;
+    default:
+      showDefaultPage(this.textContent);
+  }
+}
 
 function showTransferPage() {
   pagesContainer.innerHTML = '';
-  pagesContainer.appendChild(transferPage.cloneNode(true));
+  const page = transferPage.cloneNode(true);
+  pagesContainer.appendChild(page);
   pagesContainer.style.display = 'block';
 
-  initTransferForm();
-  document.querySelector('.back-button').addEventListener('click', hidePages);
-}
+  // Инициализация формы перевода
+  const sendButton = page.querySelector('#send-coins');
+  const usernameInput = page.querySelector('#username');
+  const amountInput = page.querySelector('#amount');
+  const messageDiv = page.querySelector('#transfer-message');
 
-function initTransferForm() {
-  const usernameInput = document.getElementById('username');
-  const amountInput = document.getElementById('amount');
-  const sendButton = document.getElementById('send-coins');
-  const messageDiv = document.getElementById('transfer-message');
-
-  sendButton.addEventListener('click', async function() {
+  sendButton.addEventListener('click', async () => {
     const recipient = usernameInput.value.trim();
     const amount = parseInt(amountInput.value);
 
-    // Валидация
     if (!recipient || !recipient.startsWith('@')) {
       showMessage('Введите корректный @username', 'error', messageDiv);
       return;
@@ -281,8 +216,8 @@ function initTransferForm() {
     }
 
     try {
-      showMessage('Отправка...', 'info', messageDiv);
       sendButton.disabled = true;
+      showMessage('Отправка...', 'info', messageDiv);
 
       const response = await transferCoins(recipient, amount);
 
@@ -313,13 +248,42 @@ function initTransferForm() {
       sendButton.disabled = false;
     }
   });
+
+  // Кнопка "назад"
+  page.querySelector('.back-button').addEventListener('click', hidePages);
+  
+  // Показ истории переводов
+  renderTransferHistory();
+}
+
+function showDefaultPage(title) {
+  pagesContainer.innerHTML = '';
+  const page = defaultPage.cloneNode(true);
+  page.querySelector('.page-title').textContent = title;
+  pagesContainer.appendChild(page);
+  pagesContainer.style.display = 'block';
+
+  // Кнопка "назад"
+  page.querySelector('.back-button').addEventListener('click', hidePages);
+}
+
+function hidePages() {
+  pagesContainer.style.display = 'none';
+}
+
+function showMessage(text, type, element) {
+  element.textContent = text;
+  element.className = `transfer-message ${type}-message`;
 }
 
 function renderTransferHistory() {
-  historyList.innerHTML = '';
+  const historyContainer = document.querySelector('#history-list');
+  if (!historyContainer) return;
+
+  historyContainer.innerHTML = '';
 
   if (transferHistory.length === 0) {
-    historyList.innerHTML = '<p>Нет истории переводов</p>';
+    historyContainer.innerHTML = '<p>Нет истории переводов</p>';
     return;
   }
 
@@ -338,21 +302,23 @@ function renderTransferHistory() {
       <span class="${amountClass}">${amountPrefix}${transfer.amount}</span>
     `;
 
-    historyList.appendChild(item);
+    historyContainer.appendChild(item);
   });
 }
 
 function formatDate(isoString) {
   const date = new Date(isoString);
-  return date.toLocaleString();
+  return date.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
-// ========================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-// ========================
-
 function showDefaultPage(title) {
-  const newPage = defaultPage.cloneNode(true);
+  const newPage = document.querySelector('#default-page').cloneNode(true);
   newPage.querySelector('.page-title').textContent = title;
 
   pagesContainer.innerHTML = '';
@@ -367,6 +333,29 @@ function hidePages() {
 }
 
 function showMessage(text, type, element) {
+  if (!element) return;
   element.textContent = text;
   element.className = `transfer-message ${type}-message`;
+}
+
+// Создание всплывающего числа при клике
+function createFloatingNumber(startX, startY) {
+  const numberElement = document.createElement('div');
+  numberElement.className = 'floating-number';
+  numberElement.textContent = '+1';
+
+  const balanceRect = document.querySelector('.balance').getBoundingClientRect();
+  const targetX = balanceRect.left + balanceRect.width / 2 - startX;
+  const targetY = balanceRect.top - startY;
+
+  numberElement.style.left = `${startX}px`;
+  numberElement.style.top = `${startY}px`;
+  numberElement.style.setProperty('--target-x', `${targetX}px`);
+  numberElement.style.setProperty('--target-y', `${targetY}px`);
+
+  document.body.appendChild(numberElement);
+
+  setTimeout(() => {
+    numberElement.remove();
+  }, 700);
 }
