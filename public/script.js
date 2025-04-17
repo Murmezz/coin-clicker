@@ -225,6 +225,48 @@ function showTransferPage() {
   renderTransferHistory(historyList);
 }
 
+// Перевод коинов другому пользователю
+async function transferCoins(recipientUsername, amount) {
+  try {
+    // Поиск получателя по username
+    const recipientSnapshot = await db.ref('users').orderByChild('username').equalTo(recipientUsername).once('value');
+
+    if (!recipientSnapshot.exists()) {
+      return { success: false, message: 'Пользователь не найден' };
+    }
+
+    // Получаем данные получателя
+    const recipientData = recipientSnapshot.val();
+    const recipientId = Object.keys(recipientData)[0]; // ID получателя
+    const recipientBalance = recipientData[recipientId].balance || 0;
+
+    // Обновляем баланс получателя
+    await db.ref(`users/${recipientId}`).update({
+      balance: recipientBalance + amount
+    });
+
+    // Обновляем баланс отправителя
+    await db.ref(`users/${USER_ID}`).update({
+      balance: coins - amount
+    });
+
+    // Добавляем запись в историю переводов
+    const transferRecord = {
+      type: 'outgoing',
+      username: recipientUsername,
+      amount: amount,
+      date: new Date().toISOString()
+    };
+
+    await db.ref(`users/${USER_ID}/transfers`).push(transferRecord);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Transfer error:', error);
+    return { success: false, message: 'Ошибка сети' };
+  }
+}
+
 // Скрыть все страницы
 function hidePages() {
   pagesContainer.style.display = 'none';
