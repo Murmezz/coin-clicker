@@ -13,128 +13,143 @@ const firebaseConfig = {
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Генерация ID пользователя
-const USER_ID = localStorage.getItem('user_id') || 'user_' + Math.random().toString(36).substr(2, 9);
-localStorage.setItem('user_id', USER_ID);
-
-// Данные игры
+// Глобальные переменные
+let USER_ID = '';
+let currentUsername = '';
 let coins = 0;
 let highscore = 0;
 let transferHistory = [];
-let currentUsername = '';
 
-// Элементы интерфейса
-const coinContainer = document.getElementById('coin');
-const coinsDisplay = document.getElementById('coins');
-const highscoreDisplay = document.getElementById('highscore');
-const pagesContainer = document.getElementById('pages-container');
-const transferPage = document.getElementById('transfer-page');
-const defaultPage = document.getElementById('default-page');
-const historyList = document.getElementById('history-list');
-
-// Инициализация
-loadUserData();
-initEventListeners();
-
-// ========================
-// ФУНКЦИИ РАБОТЫ С FIREBASE
-// ========================
-
-async function loadUserData() {
-  try {
-    const snapshot = await db.ref(`users/${USER_ID}`).once('value');
-    
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      coins = data.balance || 100;
-      highscore = data.highscore || 0;
-      transferHistory = data.transfers || [];
-      currentUsername = data.username || `@user_${Math.random().toString(36).substr(2, 5)}`;
-      
-      if (!data.username) {
-        await db.ref(`users/${USER_ID}/username`).set(currentUsername);
-      }
-    } else {
-      // Создаем нового пользователя
-      currentUsername = `@user_${Math.random().toString(36).substr(2, 5)}`;
-      await db.ref(`users/${USER_ID}`).set({
-        balance: 100,
-        highscore: 0,
-        transfers: [],
-        username: currentUsername
-      });
+// Получение данных пользователя Telegram
+function initTelegramUser() {
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+    const tgUser = Telegram.WebApp.initDataUnsafe.user;
+    if (tgUser) {
+      USER_ID = `tg_${tgUser.id}`;
+      currentUsername = tgUser.username ? `@${tgUser.username}` : `@user${tgUser.id.toString().slice(-4)}`;
+      console.log('Telegram user detected:', currentUsername);
+      return;
     }
-    
-    updateDisplays();
-    renderTransferHistory();
-  } catch (error) {
-    console.error("Ошибка загрузки:", error);
-    coins = 100;
-    updateDisplays();
   }
+  
+  // Fallback для тестирования вне Telegram
+  USER_ID = `temp_${Math.random().toString(36).substr(2, 9)}`;
+  currentUsername = `@tempuser_${Math.random().toString(36).substr(2, 5)}`;
+  console.log('Test user created:', currentUsername);
 }
 
-async function saveUserData() {
-  try {
-    await db.ref(`users/${USER_ID}`).update({
-      balance: coins,
-      highscore: highscore,
-      transfers: transferHistory
+// Загрузка данных пользователя
+async function loadUserData() {
+  return new Promise((resolve) => {
+    db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        coins = data.balance || 100;
+        highscore = data.highscore || 0;
+        transferHistory = data.transfers || [];
+        
+        // Обновляем username если изменился
+        if (data.username !== currentUsername) {
+          db.ref(`users/${USER_ID}/username`).set(currentUsername);
+        }
+        
+        console.log('User data loaded:', data);
+      } else {
+        createNewUser();
+      }
+      updateDisplays();
+      resolve();
     });
-  } catch (error) {
-    console.error("Ошибка сохранения:", error);
-  }
+  });
 }
 
+// Создание нового пользователя
+async function createNewUser() {
+  const userData = {
+    balance: 100,
+    highscore: 0,
+    transfers: [],
+    username: currentUsername,
+    created_at: firebase.database.ServerValue.TIMESTAMP,
+    is_active: true
+  };
+  
+  await db.ref(`users/${USER_ID}`).set(userData);
+  console.log('New user created:', userData);
+}
+
+// Система переводов (обновленная)
 async function transferCoins(recipientUsername, amount) {
   try {
+    // Валидация
+    if (recipientUsername === currentUsername) {
+      return { success: false, message: 'Нельзя перевести себе' };
+    }
+
     // Поиск получателя
-    const usersSnapshot = await db.ref('users').once('value');
-    let recipientId = null;
+    const snapshot = await db.ref('users').once('value');
+    let recipientFound = false;
     let recipientData = null;
     
-    usersSnapshot.forEach((childSnapshot) => {
-      if (childSnapshot.val().username === recipientUsername) {
-        recipientId = childSnapshot.key;
-        recipientData = childSnapshot.val();
+    snapshot.forEach((childSnapshot) => {
+      const user = childSnapshot.val();
+      if (user.username === recipientUsername) {
+        recipientFound = true;
+        recipientData = {
+          id: childSnapshot.key,
+          ...user
+        };
       }
     });
 
-    if (!recipientId) {
+    if (!recipientFound) {
       return { success: false, message: 'Пользователь не найден' };
+    }
+
+    // Проверка активности получателя
+    if (recipientData.is_active === false) {
+      return { success: false, message: 'Получатель неактивен' };
     }
 
     // Обновление балансов
     const updates = {};
     updates[`users/${USER_ID}/balance`] = coins - amount;
-    updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
+    updates[`users/${recipientData.id}/balance`] = (recipientData.balance || 0) + amount;
     
-    // Добавление в историю
-    const transferData = {
+    // Запись в историю
+    const transferRecord = {
       type: 'outgoing',
-      username: recipientUsername,
+      to: recipientUsername,
       amount: amount,
       date: new Date().toISOString()
     };
     
-    const recipientTransferData = {
+    const recipientTransferRecord = {
       type: 'incoming',
-      username: currentUsername,
+      from: currentUsername,
       amount: amount,
       date: new Date().toISOString()
     };
     
-    updates[`users/${USER_ID}/transfers`] = [...transferHistory, transferData];
-    updates[`users/${recipientId}/transfers`] = [...(recipientData.transfers || []), recipientTransferData];
+    updates[`users/${USER_ID}/transfers`] = [...transferHistory, transferRecord];
+    updates[`users/${recipientData.id}/transfers`] = [...(recipientData.transfers || []), recipientTransferRecord];
     
     await db.ref().update(updates);
     return { success: true };
     
   } catch (error) {
-    console.error("Ошибка перевода:", error);
+    console.error('Transfer error:', error);
     return { success: false, message: 'Ошибка сервера' };
   }
 }
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', async () => {
+  initTelegramUser();
+  await loadUserData();
+  initEventListeners();
+  console.log('Game initialized for:', currentUsername);
+});
 
 // ========================
 // ОСНОВНЫЕ ФУНКЦИИ ИГРЫ
