@@ -17,7 +17,17 @@ const firebaseConfig = {
 // Инициализация Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth(app); // Теперь это должно работать
+const auth = getAuth(app);
+
+// Аутентификация пользователя
+async function authenticateUser() {
+  try {
+    const userCredential = await signInAnonymously(auth);
+    console.log('User authenticated:', userCredential.user.uid);
+  } catch (error) {
+    console.error('Authentication error:', error);
+  }
+}
 
 // Загрузка данных пользователя
 async function loadUserData() {
@@ -57,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initEventListeners();
   console.log('Initialization complete');
 });
+
 
 
 // Глобальные переменные
