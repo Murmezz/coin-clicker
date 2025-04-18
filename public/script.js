@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
+
 // Глобальные переменные
 let USER_ID = '';
 let currentUsername = '';
