@@ -88,7 +88,7 @@ function initTelegramUser() {
 async function loadUserData() {
   return new Promise((resolve, reject) => {
     db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
-      if (snapshot.exists()) {
+      if (snapshot.exists) {
         const data = snapshot.val();
         coins = data.balance || 0; // Начальный баланс 0
         highscore = data.highscore || 0;
