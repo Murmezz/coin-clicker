@@ -1,3 +1,8 @@
+// Импорт Firebase SDK v9
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
 // Конфигурация Firebase (ваши данные)
 const firebaseConfig = {
   apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
@@ -10,47 +15,18 @@ const firebaseConfig = {
 };
 
 // Инициализация Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
 
 // Аутентификация пользователя
 async function authenticateUser() {
   try {
-    const userCredential = await auth.signInAnonymously();
+    const userCredential = await signInAnonymously(auth);
     console.log('User authenticated:', userCredential.user.uid);
   } catch (error) {
     console.error('Authentication error:', error);
   }
-}
-
-// Загрузка данных пользователя
-async function loadUserData() {
-  return new Promise((resolve, reject) => {
-    db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        coins = data.balance || 0; // Начальный баланс 0
-        highscore = data.highscore || 0;
-
-        // Преобразуем transferHistory в массив, если это объект
-        if (data.transfers && typeof data.transfers === 'object') {
-          transferHistory = Object.values(data.transfers);
-        } else {
-          transferHistory = [];
-        }
-
-        console.log('User data loaded:', data);
-      } else {
-        createNewUser();
-      }
-      updateDisplays();
-      resolve();
-    }, (error) => {
-      console.error('Error loading data:', error);
-      reject(error);
-    });
-  });
 }
 
 // Инициализация при загрузке
@@ -61,9 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initEventListeners();
   console.log('Initialization complete');
 });
-
-
-
 
 
 // Глобальные переменные
