@@ -9,8 +9,6 @@ const firebaseConfig = {
   appId: "1:1024804439259:web:351a470a824712c494f8fe"
 };
 
-// История переводов
-let transferHistory = [];
 
 // Инициализация Firebase
 const app = firebase.initializeApp(firebaseConfig);
