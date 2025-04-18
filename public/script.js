@@ -9,9 +9,33 @@ const firebaseConfig = {
   appId: "1:1024804439259:web:351a470a824712c494f8fe"
 };
 
+// История переводов
+let transferHistory = [];
+
 // Инициализация Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
+
+// Аутентификация пользователя
+async function authenticateUser() {
+  try {
+    const userCredential = await auth.signInAnonymously();
+    console.log('User authenticated:', userCredential.user.uid);
+  } catch (error) {
+    console.error('Authentication error:', error);
+  }
+}
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', async () => {
+  await authenticateUser(); // Аутентифицируем пользователя
+  initTelegramUser();
+  await loadUserData();
+  initEventListeners();
+  console.log('Initialization complete');
+});
+
 
 // Глобальные переменные
 let USER_ID = '';
