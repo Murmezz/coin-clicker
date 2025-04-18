@@ -111,7 +111,6 @@ async function loadUserData() {
   });
 }
 ;
-}
 
 // Создание нового пользователя
 async function createNewUser() {
