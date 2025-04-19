@@ -68,18 +68,21 @@
    });
  }
  
- // Создание нового пользователя
- async function createNewUser() {
-   const userData = {
-     balance: 0, // Начальный баланс 0
-     highscore: 0,
-     transfers: [],
-     username: currentUsername,
-     created_at: firebase.database.ServerValue.TIMESTAMP
-   };
-   await db.ref(`users/${USER_ID}`).set(userData);
-   console.log('New user created:', userData);
- }
+// Функция для сохранения данных пользователя
+async function saveUserData() {
+  try {
+    const userRef = ref(db, `users/${USER_ID}`);
+    await set(userRef, {
+      balance: coins,
+      highscore: highscore,
+      transfers: transferHistory,
+    });
+    console.log('User data saved successfully');
+  } catch (error) {
+    console.error('Error saving user data:', error);
+  }
+}
+
  
  // Обновление интерфейса
  function updateDisplays() {
