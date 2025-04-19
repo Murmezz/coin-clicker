@@ -31,20 +31,6 @@ const pagesContainer = document.getElementById('pages-container');
 const transferPage = document.getElementById('transfer-page');
 const defaultPage = document.getElementById('default-page');
 
-// Сохранение данных пользователя
-async function saveUserData() {
-  try {
-    await db.ref(`users/${USER_ID}`).update({
-      balance: coins,
-      highscore: highscore,
-      transfers: transferHistory
-    });
-    console.log('Data saved');
-  } catch (error) {
-    console.error('Error saving data:', error);
-  }
-}
-
 // Инициализация пользователя
 function initTelegramUser() {
   if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user) {
@@ -58,6 +44,7 @@ function initTelegramUser() {
     currentUsername = `@dev_${Math.random().toString(36).substr(2, 5)}`;
     console.log('Test user created:', USER_ID, currentUsername);
   }
+  localStorage.setItem('user_id', USER_ID);
 }
 
 // Загрузка данных пользователя
@@ -66,7 +53,7 @@ async function loadUserData() {
     db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        coins = data.balance || 0; // Начальный баланс 0
+        coins = data.balance || 100;
         highscore = data.highscore || 0;
         transferHistory = data.transfers || [];
         console.log('User data loaded:', data);
@@ -85,7 +72,7 @@ async function loadUserData() {
 // Создание нового пользователя
 async function createNewUser() {
   const userData = {
-    balance: 0, // Начальный баланс 0
+    balance: 100,
     highscore: 0,
     transfers: [],
     username: currentUsername,
@@ -93,6 +80,20 @@ async function createNewUser() {
   };
   await db.ref(`users/${USER_ID}`).set(userData);
   console.log('New user created:', userData);
+}
+
+// Сохранение данных
+async function saveUserData() {
+  try {
+    await db.ref(`users/${USER_ID}`).update({
+      balance: coins,
+      highscore: highscore,
+      transfers: transferHistory
+    });
+    console.log('Data saved');
+  } catch (error) {
+    console.error('Error saving data:', error);
+  }
 }
 
 // Обновление интерфейса
@@ -120,7 +121,7 @@ function initEventListeners() {
   const navButtons = document.querySelectorAll('.nav-button');
   if (navButtons) {
     navButtons.forEach(button => {
-      button.addEventListener('click', () => handleNavButtonClick(button));
+      button.addEventListener('click', handleNavButtonClick);
     });
   } else {
     console.error('Navigation buttons not found');
@@ -128,8 +129,8 @@ function initEventListeners() {
 }
 
 // Обработка нажатия на кнопки навигации
-function handleNavButtonClick(button) {
-  const pageName = button.getAttribute('data-page');
+function handleNavButtonClick() {
+  const pageName = this.getAttribute('data-page');
   switch (pageName) {
     case 'top':
       showDefaultPage('Топ игроков');
@@ -147,23 +148,11 @@ function handleNavButtonClick(button) {
       showDefaultPage('Рефералы');
       break;
     default:
-      showDefaultPage(button.textContent);
+      showDefaultPage(this.textContent);
   }
 }
 
-// Показать стандартную страницу
-function showDefaultPage(title) {
-  pagesContainer.innerHTML = '';
-  const page = defaultPage.cloneNode(true);
-  page.querySelector('.page-title').textContent = title;
-  pagesContainer.appendChild(page);
-  pagesContainer.style.display = 'block';
-
-  // Кнопка "Назад"
-  page.querySelector('.back-button').addEventListener('click', hidePages);
-}
-
-// Показать страницу перевода
+// Показ страницы перевода
 function showTransferPage() {
   pagesContainer.innerHTML = '';
   const page = transferPage.cloneNode(true);
@@ -175,7 +164,6 @@ function showTransferPage() {
   const usernameInput = page.querySelector('#username');
   const amountInput = page.querySelector('#amount');
   const messageDiv = page.querySelector('#transfer-message');
-  const historyList = page.querySelector('#history-list');
 
   sendButton.addEventListener('click', async () => {
     const recipient = usernameInput.value.trim();
@@ -206,7 +194,6 @@ function showTransferPage() {
         coins -= amount;
         updateDisplays();
         showMessage(`Успешно отправлено ${amount} коинов`, 'success', messageDiv);
-        renderTransferHistory(historyList); // Обновляем историю переводов
       } else {
         showMessage(response.message || 'Ошибка перевода', 'error', messageDiv);
       }
@@ -222,10 +209,22 @@ function showTransferPage() {
   page.querySelector('.back-button').addEventListener('click', hidePages);
 
   // Показ истории переводов
-  renderTransferHistory(historyList);
+  renderTransferHistory();
 }
 
-// Скрыть все страницы
+// Показ стандартной страницы
+function showDefaultPage(title) {
+  pagesContainer.innerHTML = '';
+  const page = defaultPage.cloneNode(true);
+  page.querySelector('.page-title').textContent = title;
+  pagesContainer.appendChild(page);
+  pagesContainer.style.display = 'block';
+
+  // Кнопка "Назад"
+  page.querySelector('.back-button').addEventListener('click', hidePages);
+}
+
+// Скрытие всех страниц
 function hidePages() {
   pagesContainer.style.display = 'none';
 }
@@ -237,7 +236,8 @@ function showMessage(text, type, element) {
 }
 
 // Рендер истории переводов
-function renderTransferHistory(historyContainer) {
+function renderTransferHistory() {
+  const historyContainer = document.getElementById('history-list');
   if (!historyContainer) return;
 
   historyContainer.innerHTML = '';
