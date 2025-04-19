@@ -79,7 +79,7 @@
    };
    await db.ref(`users/${USER_ID}`).set(userData);
    console.log('New user created:', userData);
- }.
+ }
  }
  
  // Обновление интерфейса
