@@ -1,8 +1,3 @@
-// Импорт Firebase SDK v9
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
 // Конфигурация Firebase (ваши данные)
 const firebaseConfig = {
   apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
@@ -15,29 +10,8 @@ const firebaseConfig = {
 };
 
 // Инициализация Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
-
-// Аутентификация пользователя
-async function authenticateUser() {
-  try {
-    const userCredential = await signInAnonymously(auth);
-    console.log('User authenticated:', userCredential.user.uid);
-  } catch (error) {
-    console.error('Authentication error:', error);
-  }
-}
-
-// Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', async () => {
-  await authenticateUser(); // Аутентифицируем пользователя
-  initTelegramUser();
-  await loadUserData();
-  initEventListeners();
-  console.log('Initialization complete');
-});
-
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 // Глобальные переменные
 let USER_ID = '';
@@ -90,18 +64,11 @@ function initTelegramUser() {
 async function loadUserData() {
   return new Promise((resolve, reject) => {
     db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
-      if (snapshot.exists) {
+      if (snapshot.exists()) {
         const data = snapshot.val();
         coins = data.balance || 0; // Начальный баланс 0
         highscore = data.highscore || 0;
-
-        // Преобразуем transferHistory в массив, если это объект
-        if (data.transfers && typeof data.transfers === 'object') {
-          transferHistory = Object.values(data.transfers);
-        } else {
-          transferHistory = [];
-        }
-
+        transferHistory = data.transfers || [];
         console.log('User data loaded:', data);
       } else {
         createNewUser();
@@ -114,7 +81,6 @@ async function loadUserData() {
     });
   });
 }
-;
 
 // Создание нового пользователя
 async function createNewUser() {
@@ -259,54 +225,6 @@ function showTransferPage() {
   renderTransferHistory(historyList);
 }
 
-// Перевод коинов другому пользователю
-async function transferCoins(recipientUsername, amount) {
-  try {
-    // Поиск получателя по username
-    const recipientSnapshot = await db.ref('users').orderByChild('username').equalTo(recipientUsername).once('value');
-
-    if (!recipientSnapshot.exists()) {
-      return { success: false, message: 'Пользователь не найден' };
-    }
-
-    // Получаем данные получателя
-    const recipientData = recipientSnapshot.val();
-    const recipientId = Object.keys(recipientData)[0]; // ID получателя
-    const recipientBalance = recipientData[recipientId].balance || 0;
-
-    // Обновляем баланс получателя
-    await db.ref(`users/${recipientId}`).update({
-      balance: recipientBalance + amount
-    });
-
-    // Обновляем баланс отправителя
-    await db.ref(`users/${USER_ID}`).update({
-      balance: coins - amount
-    });
-
-    // Добавляем запись в историю переводов
-    const transferRecord = {
-      type: 'outgoing',
-      username: recipientUsername,
-      amount: amount,
-      date: new Date().toISOString()
-    };
-
-    // Убедимся, что transferHistory — это массив
-    if (!Array.isArray(transferHistory)) {
-      transferHistory = [];
-    }
-
-    await db.ref(`users/${USER_ID}/transfers`).push(transferRecord);
-
-    return { success: true };
-  } catch (error) {
-    console.error('Transfer error:', error);
-    return { success: false, message: 'Ошибка сети' };
-  }
-}
-
-
 // Скрыть все страницы
 function hidePages() {
   pagesContainer.style.display = 'none';
@@ -324,13 +242,11 @@ function renderTransferHistory(historyContainer) {
 
   historyContainer.innerHTML = '';
 
-  // Проверяем, что transferHistory — это массив
-  if (!Array.isArray(transferHistory) || transferHistory.length === 0) {
+  if (transferHistory.length === 0) {
     historyContainer.innerHTML = '<p>Нет истории переводов</p>';
     return;
   }
 
-  // Ограничиваем количество записей до 10
   transferHistory.slice(0, 10).forEach(transfer => {
     const item = document.createElement('div');
     item.className = `history-item ${transfer.type}`;
@@ -349,7 +265,6 @@ function renderTransferHistory(historyContainer) {
     historyContainer.appendChild(item);
   });
 }
-
 
 // Форматирование даты
 function formatDate(isoString) {
