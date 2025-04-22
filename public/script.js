@@ -164,13 +164,6 @@ async function makeTransfer(recipientUsername, amount) {
                 message: 'Пользователь @' + recipientUsername.slice(1) + ' не найден' 
             };
         }
-        
-        // Остальная логика перевода...
-    } catch (error) {
-        console.error('Ошибка перевода:', error);
-        return { success: false, message: 'Ошибка сервера' };
-    }
-}
 
         // Подготовка транзакции
         const transaction = {
@@ -180,6 +173,12 @@ async function makeTransfer(recipientUsername, amount) {
             amount: amount,
             status: 'completed'
         };
+
+            } catch (error) {
+        console.error('Ошибка перевода:', error);
+        return { success: false, message: 'Ошибка сервера' };
+    }
+}
 
         // Атомарное обновление
         const updates = {};
