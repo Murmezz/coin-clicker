@@ -21,6 +21,15 @@ let coins = 0;
 let highscore = 0;
 let transferHistory = [];
 
+// Функция для обновления интерфейса
+function updateDisplays() {
+    const coinsDisplay = document.getElementById('coins');
+    const highscoreDisplay = document.getElementById('highscore');
+    
+    if (coinsDisplay) coinsDisplay.textContent = coins;
+    if (highscoreDisplay) highscoreDisplay.textContent = highscore;
+}
+
 // Инициализация пользователя
 async function initTelegramUser() {
     try {
@@ -139,31 +148,101 @@ async function loadUserData() {
                 coins = data.balance || 0;
                 highscore = data.highscore || 0;
                 transferHistory = data.transfers || [];
+                updateDisplays();
             }
-            updateDisplays();
             resolve();
         });
     });
 }
 
-// Остальные функции (showTransferPage, renderTransferHistory и т.д.) остаются без изменений
-// ... (как в предыдущем примере)
+// Показать страницу перевода
+function showTransferPage() {
+    const pagesContainer = document.getElementById('pages-container');
+    if (!pagesContainer) return;
+    
+    pagesContainer.innerHTML = '';
+    const page = document.getElementById('transfer-page').cloneNode(true);
+    pagesContainer.appendChild(page);
+    pagesContainer.style.display = 'block';
+
+    // Обработчики для формы
+    const sendButton = page.querySelector('#send-coins');
+    const usernameInput = page.querySelector('#username');
+    const amountInput = page.querySelector('#amount');
+    const messageDiv = page.querySelector('#transfer-message');
+    const historyList = page.querySelector('#history-list');
+
+    sendButton.addEventListener('click', async () => {
+        const recipient = usernameInput.value.trim();
+        const amount = parseInt(amountInput.value);
+
+        if (!recipient || !recipient.startsWith('@')) {
+            showMessage('Введите @username получателя', 'error', messageDiv);
+            return;
+        }
+
+        const result = await transferCoins(recipient, amount);
+        showMessage(result.message, result.success ? 'success' : 'error', messageDiv);
+        
+        if (result.success) {
+            usernameInput.value = '';
+            amountInput.value = '';
+            renderTransferHistory(historyList);
+        }
+    });
+
+    // Кнопка "Назад"
+    page.querySelector('.back-button').addEventListener('click', () => {
+        pagesContainer.style.display = 'none';
+    });
+
+    // Показ истории
+    renderTransferHistory(historyList);
+}
+
+// Рендер истории переводов
+function renderTransferHistory(container) {
+    if (!container) return;
+    
+    container.innerHTML = transferHistory.length === 0 
+        ? '<p>Нет истории переводов</p>'
+        : transferHistory.slice(0, 10).map(tx => `
+            <div class="history-item ${tx.status}">
+                <div>
+                    <span class="history-username">${tx.to}</span>
+                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
+                </div>
+                <span class="history-amount">-${tx.amount}</span>
+            </div>
+        `).join('');
+}
+
+// Показать сообщение
+function showMessage(text, type, container) {
+    if (!container) return;
+    container.textContent = text;
+    container.className = `transfer-message ${type}-message`;
+}
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', async () => {
+    // Сначала определяем все функции, затем инициализируем
     await initTelegramUser();
     await loadUserData();
 
     // Клик по монете
-    document.querySelector('.coin-button').addEventListener('click', async () => {
-        coins++;
-        if (coins > highscore) highscore = coins;
-        updateDisplays();
-        await db.ref(`users/${USER_ID}`).update({ 
-            balance: coins, 
-            highscore 
+    const coinButton = document.querySelector('.coin-button');
+    if (coinButton) {
+        coinButton.addEventListener('click', async () => {
+            coins++;
+            if (coins > highscore) highscore = coins;
+            updateDisplays();
+            await db.ref(`users/${USER_ID}`).update({ 
+                balance: coins, 
+                highscore 
+            });
         });
-    });
+    }
 
     // Навигация
     document.querySelectorAll('.nav-button').forEach(btn => {
@@ -172,6 +251,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showTransferPage();
             } else {
                 const pagesContainer = document.getElementById('pages-container');
+                if (!pagesContainer) return;
+                
                 pagesContainer.innerHTML = '';
                 const page = document.getElementById('default-page').cloneNode(true);
                 page.querySelector('.page-title').textContent = btn.textContent;
