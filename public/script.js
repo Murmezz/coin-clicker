@@ -155,6 +155,7 @@ async function loadUserData() {
     });
 }
 
+// Функция для безопасного получения элемента
 function getElement(id) {
     const el = document.getElementById(id);
     if (!el) console.error(`Element with id '${id}' not found`);
@@ -221,7 +222,29 @@ function showTransferPage() {
     renderTransferHistory(historyList);
 }
 
-// ... (остальные функции остаются без изменений)
+// Рендер истории переводов
+function renderTransferHistory(container) {
+    if (!container) return;
+    
+    container.innerHTML = transferHistory.length === 0 
+        ? '<p>Нет истории переводов</p>'
+        : transferHistory.slice(0, 10).map(tx => `
+            <div class="history-item ${tx.status}">
+                <div>
+                    <span class="history-username">${tx.to}</span>
+                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
+                </div>
+                <span class="history-amount">-${tx.amount}</span>
+            </div>
+        `).join('');
+}
+
+// Показать сообщение
+function showMessage(text, type, container) {
+    if (!container) return;
+    container.textContent = text;
+    container.className = `transfer-message ${type}-message`;
+}
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', async () => {
