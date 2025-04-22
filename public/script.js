@@ -30,6 +30,30 @@ function updateDisplays() {
     if (highscoreDisplay) highscoreDisplay.textContent = highscore;
 }
 
+// Функция для отображения сообщений
+function showMessage(text, type, container) {
+    if (!container) return;
+    container.textContent = text;
+    container.className = `transfer-message ${type}-message`;
+}
+
+// Функция для рендера истории переводов
+function renderTransferHistory(container) {
+    if (!container) return;
+    
+    container.innerHTML = transferHistory.length === 0 
+        ? '<p>Нет истории переводов</p>'
+        : transferHistory.slice(0, 10).map(tx => `
+            <div class="history-item ${tx.status}">
+                <div>
+                    <span class="history-username">${tx.to}</span>
+                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
+                </div>
+                <span class="history-amount">-${tx.amount}</span>
+            </div>
+        `).join('');
+}
+
 // Инициализация пользователя
 async function initTelegramUser() {
     try {
@@ -48,7 +72,7 @@ async function initTelegramUser() {
             if (!snapshot.exists()) {
                 await userRef.set({
                     username: currentUsername,
-                    balance: 100, // Стартовый баланс
+                    balance: 100,
                     highscore: 0,
                     transfers: []
                 });
@@ -68,12 +92,15 @@ async function findUserInDatabase(username) {
     if (!username.startsWith('@')) return null;
     
     const cleanUsername = username.toLowerCase();
-    const snapshot = await db.ref('users').orderByChild('username').equalTo(cleanUsername).once('value');
-    
-    if (snapshot.exists()) {
-        const userData = snapshot.val();
-        const userId = Object.keys(userData)[0];
-        return { userId, ...userData[userId] };
+    try {
+        const snapshot = await db.ref('users').orderByChild('username').equalTo(cleanUsername).once('value');
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            const userId = Object.keys(userData)[0];
+            return { userId, ...userData[userId] };
+        }
+    } catch (error) {
+        console.error('Database error:', error);
     }
     return null;
 }
@@ -115,14 +142,7 @@ async function transferCoins(recipientUsername, amount) {
         updates[`users/${USER_ID}/balance`] = coins - amount;
         updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
         updates[`users/${recipient.userId}/balance`] = recipient.balance + amount;
-        
-        // Сохраняем историю получателя
-        const recipientTransfers = recipient.transfers || [];
-        updates[`users/${recipient.userId}/transfers`] = [...recipientTransfers, {
-            ...transaction,
-            from: currentUsername,
-            to: recipientUsername
-        }];
+        updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
 
         // Выполняем обновление
         await db.ref().update(updates);
@@ -135,7 +155,7 @@ async function transferCoins(recipientUsername, amount) {
         return { success: true, message: `Переведено ${amount} коинов пользователю ${recipientUsername}` };
     } catch (error) {
         console.error('Ошибка перевода:', error);
-        return { success: false, message: 'Ошибка при переводе' };
+        return { success: false, message: 'Ошибка при переводе. Проверьте подключение.' };
     }
 }
 
@@ -155,24 +175,16 @@ async function loadUserData() {
     });
 }
 
-// Функция для безопасного получения элемента
-function getElement(id) {
-    const el = document.getElementById(id);
-    if (!el) console.error(`Element with id '${id}' not found`);
-    return el;
-}
-
 // Показать страницу перевода
 function showTransferPage() {
-    const pagesContainer = getElement('pages-container');
-    const transferPageTemplate = getElement('transfer-page');
+    const pagesContainer = document.getElementById('pages-container');
+    const transferPageTemplate = document.getElementById('transfer-page');
     
     if (!pagesContainer || !transferPageTemplate) {
-        console.error('Required elements for transfer page not found');
+        console.error('Required elements not found');
         return;
     }
 
-    // Клонируем шаблон страницы
     const page = transferPageTemplate.cloneNode(true);
     pagesContainer.innerHTML = '';
     pagesContainer.appendChild(page);
@@ -186,7 +198,7 @@ function showTransferPage() {
     const historyList = page.querySelector('#history-list');
 
     if (!sendButton || !usernameInput || !amountInput || !messageDiv || !historyList) {
-        console.error('Some transfer form elements not found');
+        console.error('Form elements not found');
         return;
     }
 
@@ -222,38 +234,8 @@ function showTransferPage() {
     renderTransferHistory(historyList);
 }
 
-// Рендер истории переводов
-function renderTransferHistory(container) {
-    if (!container) return;
-    
-    container.innerHTML = transferHistory.length === 0 
-        ? '<p>Нет истории переводов</p>'
-        : transferHistory.slice(0, 10).map(tx => `
-            <div class="history-item ${tx.status}">
-                <div>
-                    <span class="history-username">${tx.to}</span>
-                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
-                </div>
-                <span class="history-amount">-${tx.amount}</span>
-            </div>
-        `).join('');
-}
-
-// Показать сообщение
-function showMessage(text, type, container) {
-    if (!container) return;
-    container.textContent = text;
-    container.className = `transfer-message ${type}-message`;
-}
-
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', async () => {
-    // Проверяем существование основных элементов
-    if (!getElement('coin') || !getElement('coins') || !getElement('highscore')) {
-        console.error('Critical elements not found');
-        return;
-    }
-
     await initTelegramUser();
     await loadUserData();
 
@@ -277,8 +259,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (btn.dataset.page === 'transfer') {
                 showTransferPage();
             } else {
-                const pagesContainer = getElement('pages-container');
-                const defaultPageTemplate = getElement('default-page');
+                const pagesContainer = document.getElementById('pages-container');
+                const defaultPageTemplate = document.getElementById('default-page');
                 
                 if (!pagesContainer || !defaultPageTemplate) return;
                 
