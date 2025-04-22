@@ -440,4 +440,80 @@ body {
     padding: 12px;                     /* Уменьшенные отступы */
     font-size: 16px;                   /* Уменьшенный шрифт */
   }
+
+  /* Стили для истории переводов */
+.transfer-history {
+    margin-top: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.transfer-history h3 {
+    color: #7c4dff;
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-align: center;
+}
+
+.history-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.history-item {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+}
+
+.history-username {
+    font-weight: bold;
+    color: #ffffff;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.history-date {
+    font-size: 12px;
+    color: #aaaaaa;
+    display: block;
+}
+
+.history-amount {
+    font-weight: bold;
+    font-size: 16px;
+    color: #4CAF50;
+}
+
+.history-item.outgoing .history-amount {
+    color: #f44336;
+}
+
+/* Полоса прокрутки */
+.history-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.history-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background: #7c4dff;
+    border-radius: 3px;
+}
 }
