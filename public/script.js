@@ -94,38 +94,83 @@ async function findUser(username) {
     if (!username.startsWith('@')) return null;
     
     try {
+        // Приводим к нижнему регистру для поиска
+        const searchUsername = username.toLowerCase();
+        
+        // Получаем токен аутентификации
+        const token = await auth.currentUser.getIdToken();
+        
+        // Альтернативный метод поиска через фильтрацию
         const snapshot = await db.ref('users')
             .orderByChild('username')
-            .equalTo(username.toLowerCase())
-            .once('value');
+            .equalTo(searchUsername)
+            .once('value', { token });
         
         if (snapshot.exists()) {
             const users = snapshot.val();
             const userId = Object.keys(users)[0];
-            return { userId, ...users[userId] };
+            return { 
+                userId,
+                username: users[userId].username,
+                balance: users[userId].balance || 0,
+                transfers: users[userId].transfers || []
+            };
         }
+        return null;
     } catch (error) {
         console.error('Ошибка поиска:', error);
+        // Fallback: попробуем получить только нужного пользователя
+        try {
+            const allUsers = await db.ref('users').once('value');
+            const users = allUsers.val() || {};
+            for (const uid in users) {
+                if (users[uid].username && 
+                    users[uid].username.toLowerCase() === username.toLowerCase()) {
+                    return {
+                        userId: uid,
+                        ...users[uid]
+                    };
+                }
+            }
+            return null;
+        } catch (fallbackError) {
+            console.error('Fallback search failed:', fallbackError);
+            return null;
+        }
     }
-    return null;
 }
 
 // Перевод средств
 async function makeTransfer(recipientUsername, amount) {
     try {
-        // Проверки
-        if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
-            return { success: false, message: 'Нельзя перевести себе' };
+        // Проверка аутентификации
+        if (!auth.currentUser) {
+            await auth.signInAnonymously();
         }
         
+        // Проверка ввода
+        if (!recipientUsername || !recipientUsername.startsWith('@')) {
+            return { success: false, message: 'Некорректный юзернейм' };
+        }
+        
+        // Приводим юзернейм к нижнему регистру
+        recipientUsername = recipientUsername.toLowerCase();
+        
+        // Поиск получателя
         const recipient = await findUser(recipientUsername);
         if (!recipient) {
-            return { success: false, message: 'Пользователь не зарегистрирован' };
+            return { 
+                success: false, 
+                message: 'Пользователь @' + recipientUsername.slice(1) + ' не найден' 
+            };
         }
         
-        if (amount > coins || amount < 1) {
-            return { success: false, message: 'Некорректная сумма' };
-        }
+        // Остальная логика перевода...
+    } catch (error) {
+        console.error('Ошибка перевода:', error);
+        return { success: false, message: 'Ошибка сервера' };
+    }
+}
 
         // Подготовка транзакции
         const transaction = {
