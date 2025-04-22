@@ -23,16 +23,13 @@ let transferHistory = [];
 
 // Функция для безопасного получения элемента
 function getElement(id) {
-    const el = document.getElementById(id);
-    if (!el) console.error(`Element #${id} not found`);
-    return el;
+    return document.getElementById(id);
 }
 
 // Обновление интерфейса
 function updateDisplays() {
     const coinsDisplay = getElement('coins');
     const highscoreDisplay = getElement('highscore');
-    
     if (coinsDisplay) coinsDisplay.textContent = coins;
     if (highscoreDisplay) highscoreDisplay.textContent = highscore;
 }
@@ -41,7 +38,6 @@ function updateDisplays() {
 function showMessage(text, type) {
     const messageDiv = getElement('transfer-message');
     if (!messageDiv) return;
-    
     messageDiv.textContent = text;
     messageDiv.className = `transfer-message ${type}-message`;
 }
@@ -65,84 +61,78 @@ function renderTransferHistory() {
 }
 
 // Инициализация пользователя
-async function initTelegramUser() {
+async function initUser() {
     try {
         // Аутентификация
         const { user } = await auth.signInAnonymously();
-        
+        USER_ID = user.uid;
+
+        // Для Telegram пользователей
         if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
             const tgUser = Telegram.WebApp.initDataUnsafe.user;
-            USER_ID = `tg_${tgUser.id}`;
             currentUsername = tgUser.username ? `@${tgUser.username.toLowerCase()}` : `@user${tgUser.id.slice(-4)}`;
-            
-            // Создаем/обновляем запись пользователя
-            await db.ref(`users/${USER_ID}`).update({
-                username: currentUsername,
-                balance: firebase.database.ServerValue.increment(0), // Инициализация без изменения баланса
-                highscore: firebase.database.ServerValue.increment(0)
-            });
         } else {
-            USER_ID = `anon_${user.uid.slice(-6)}`;
-            currentUsername = `@anon_${Math.random().toString(36).substr(2, 5)}`;
-            await db.ref(`users/${USER_ID}`).set({
-                username: currentUsername,
-                balance: 100,
-                highscore: 0,
-                transfers: []
-            });
+            currentUsername = `@user_${Math.random().toString(36).substr(2, 8)}`;
         }
+
+        // Создаем/обновляем запись пользователя
+        await db.ref(`users/${USER_ID}`).update({
+            username: currentUsername,
+            balance: firebase.database.ServerValue.increment(0),
+            highscore: firebase.database.ServerValue.increment(0)
+        });
+
     } catch (error) {
-        console.error('Auth error:', error);
-        USER_ID = `dev_${Math.random().toString(36).substr(2, 9)}`;
+        console.error('Ошибка инициализации:', error);
+        USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
+        currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
     }
 }
 
 // Поиск пользователя по юзернейму
-async function findUserByUsername(username) {
+async function findUser(username) {
     if (!username.startsWith('@')) return null;
     
-    const cleanUsername = username.toLowerCase();
     try {
         const snapshot = await db.ref('users')
             .orderByChild('username')
-            .equalTo(cleanUsername)
+            .equalTo(username.toLowerCase())
             .once('value');
         
         if (snapshot.exists()) {
-            const userData = snapshot.val();
-            const userId = Object.keys(userData)[0];
-            return { userId, ...userData[userId] };
+            const users = snapshot.val();
+            const userId = Object.keys(users)[0];
+            return { userId, ...users[userId] };
         }
     } catch (error) {
-        console.error('Database error:', error);
+        console.error('Ошибка поиска:', error);
     }
     return null;
 }
 
-// Перевод монет
-async function transferCoins(recipientUsername, amount) {
+// Перевод средств
+async function makeTransfer(recipientUsername, amount) {
     try {
-        // Валидация
+        // Проверки
         if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
             return { success: false, message: 'Нельзя перевести себе' };
         }
         
-        const recipient = await findUserByUsername(recipientUsername);
+        const recipient = await findUser(recipientUsername);
         if (!recipient) {
-            return { success: false, message: 'Пользователь не найден' };
+            return { success: false, message: 'Пользователь не зарегистрирован' };
         }
         
         if (amount > coins || amount < 1) {
             return { success: false, message: 'Некорректная сумма' };
         }
 
-        // Создаем транзакцию
-        const date = new Date().toISOString();
+        // Подготовка транзакции
         const transaction = {
-            date,
+            date: new Date().toISOString(),
             from: currentUsername,
             to: recipientUsername,
-            amount,
+            amount: amount,
             status: 'completed'
         };
 
@@ -155,20 +145,21 @@ async function transferCoins(recipientUsername, amount) {
 
         await db.ref().update(updates);
 
-        // Обновляем локальные данные
+        // Обновление локальных данных
         coins -= amount;
         transferHistory.push(transaction);
         updateDisplays();
+        renderTransferHistory();
 
-        return { success: true, message: `Успешно переведено ${amount} коинов` };
+        return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
-        console.error('Transfer error:', error);
-        return { success: false, message: 'Ошибка перевода' };
+        console.error('Ошибка перевода:', error);
+        return { success: false, message: 'Ошибка при переводе' };
     }
 }
 
-// Загрузка данных пользователя
-async function loadUserData() {
+// Загрузка данных
+async function loadData() {
     return new Promise((resolve) => {
         db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -184,57 +175,10 @@ async function loadUserData() {
     });
 }
 
-// Показать страницу перевода
-function showTransferPage() {
-    const pagesContainer = getElement('pages-container');
-    const transferPage = getElement('transfer-page');
-    
-    if (!pagesContainer || !transferPage) return;
-    
-    pagesContainer.innerHTML = '';
-    const page = transferPage.cloneNode(true);
-    pagesContainer.appendChild(page);
-    pagesContainer.style.display = 'block';
-
-    // Обработчики формы
-    const sendButton = page.querySelector('#send-coins');
-    const usernameInput = page.querySelector('#username');
-    const amountInput = page.querySelector('#amount');
-    
-    if (!sendButton || !usernameInput || !amountInput) return;
-    
-    sendButton.addEventListener('click', async () => {
-        const recipient = usernameInput.value.trim();
-        const amount = parseInt(amountInput.value);
-        
-        if (!recipient || !recipient.startsWith('@')) {
-            showMessage('Введите @username получателя', 'error');
-            return;
-        }
-        
-        const result = await transferCoins(recipient, amount);
-        showMessage(result.message, result.success ? 'success' : 'error');
-        
-        if (result.success) {
-            usernameInput.value = '';
-            amountInput.value = '';
-            renderTransferHistory();
-        }
-    });
-
-    // Кнопка "Назад"
-    const backButton = page.querySelector('.back-button');
-    if (backButton) {
-        backButton.addEventListener('click', () => {
-            pagesContainer.style.display = 'none';
-        });
-    }
-}
-
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', async () => {
-    await initTelegramUser();
-    await loadUserData();
+    await initUser();
+    await loadData();
 
     // Клик по монете
     const coinButton = document.querySelector('.coin-button');
@@ -255,27 +199,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.addEventListener('click', () => {
             if (btn.dataset.page === 'transfer') {
                 showTransferPage();
-            } else {
-                const pagesContainer = getElement('pages-container');
-                const defaultPage = getElement('default-page');
-                
-                if (!pagesContainer || !defaultPage) return;
-                
-                const page = defaultPage.cloneNode(true);
-                const title = page.querySelector('.page-title');
-                if (title) title.textContent = btn.textContent;
-                
-                pagesContainer.innerHTML = '';
-                pagesContainer.appendChild(page);
-                pagesContainer.style.display = 'block';
-                
-                const backButton = page.querySelector('.back-button');
-                if (backButton) {
-                    backButton.addEventListener('click', () => {
-                        pagesContainer.style.display = 'none';
-                    });
-                }
             }
         });
     });
 });
+
+// Показать страницу перевода
+function showTransferPage() {
+    const pagesContainer = getElement('pages-container');
+    const transferPage = getElement('transfer-page');
+    
+    if (!pagesContainer || !transferPage) return;
+    
+    pagesContainer.innerHTML = '';
+    const page = transferPage.cloneNode(true);
+    pagesContainer.appendChild(page);
+    pagesContainer.style.display = 'block';
+
+    // Форма перевода
+    const sendButton = page.querySelector('#send-coins');
+    const usernameInput = page.querySelector('#username');
+    const amountInput = page.querySelector('#amount');
+    
+    if (!sendButton || !usernameInput || !amountInput) return;
+    
+    sendButton.addEventListener('click', async () => {
+        const recipient = usernameInput.value.trim();
+        const amount = parseInt(amountInput.value);
+        
+        if (!recipient || !recipient.startsWith('@')) {
+            showMessage('Введите @username получателя', 'error');
+            return;
+        }
+        
+        const result = await makeTransfer(recipient, amount);
+        showMessage(result.message, result.success ? 'success' : 'error');
+        
+        if (result.success) {
+            usernameInput.value = '';
+            amountInput.value = '';
+        }
+    });
+
+    // Кнопка "Назад"
+    const backButton = page.querySelector('.back-button');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            pagesContainer.style.display = 'none';
+        });
+    }
+}
