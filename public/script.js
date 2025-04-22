@@ -24,7 +24,9 @@ let isTransferInProgress = false;
 
 // Функция для безопасного получения элемента
 function getElement(id) {
-    return document.getElementById(id);
+    const el = document.getElementById(id);
+    if (!el) console.error(`Элемент #${id} не найден`);
+    return el;
 }
 
 // Обновление интерфейса
@@ -58,7 +60,7 @@ function renderTransferHistory() {
             <div class="history-item ${tx.from === currentUsername ? 'outgoing' : 'incoming'}">
                 <div class="history-info">
                     <span class="history-direction-icon">
-                        ${tx.from === currentUsername ? '➚' : '➘'}
+                        ${tx.from === currentUsername ? '↑' : '↓'}
                     </span>
                     <div>
                         <span class="history-username">
@@ -120,6 +122,10 @@ async function initUser() {
         // Fallback для локального режима
         USER_ID = `local_${Date.now()}`;
         currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
+        coins = 100;
+        highscore = 0;
+        transferHistory = [];
+        updateDisplays();
         return;
     }
 
@@ -366,4 +372,35 @@ function initNavigation() {
 function initTelegramWebApp() {
     if (window.Telegram && Telegram.WebApp) {
         Telegram.WebApp.ready();
-        Telegram
+        Telegram.WebApp.expand();
+        
+        Telegram.WebApp.onEvent('viewportChanged', () => {
+            Telegram.WebApp.expand();
+        });
+    }
+}
+
+// Основная функция инициализации
+async function initializeApp() {
+    initTelegramWebApp();
+    await initUser();
+    await loadData();
+    initCoinClick();
+    initNavigation();
+    updateDisplays();
+}
+
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp().catch(error => {
+        console.error('Ошибка инициализации приложения:', error);
+        showMessage('Ошибка загрузки приложения', 'error');
+    });
+});
+
+// Функция для смены пользователя
+window.logout = function() {
+    clearAuthCache().then(() => {
+        window.location.reload();
+    });
+};
