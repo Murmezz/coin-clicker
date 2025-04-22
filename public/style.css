@@ -441,74 +441,29 @@ body {
     font-size: 16px;                   /* Уменьшенный шрифт */
   }
 
-  /* Стили для истории переводов */
+/* Стили для истории переводов */
 .transfer-history {
     margin-top: 20px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(30, 30, 30, 0.7);
     border-radius: 12px;
     padding: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.transfer-history h3 {
-    color: #7c4dff;
-    margin-bottom: 15px;
-    font-size: 18px;
-    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .history-list {
     max-height: 300px;
     overflow-y: auto;
-    padding-right: 5px;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #7c4dff #2d2d2d;
 }
 
-.history-item {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 12px 15px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.3s ease;
-}
-
-.history-item:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-2px);
-}
-
-.history-username {
-    font-weight: bold;
-    color: #ffffff;
-    display: block;
-    margin-bottom: 3px;
-}
-
-.history-date {
-    font-size: 12px;
-    color: #aaaaaa;
-    display: block;
-}
-
-.history-amount {
-    font-weight: bold;
-    font-size: 16px;
-    color: #4CAF50;
-}
-
-.history-item.outgoing .history-amount {
-    color: #f44336;
-}
-
-/* Полоса прокрутки */
 .history-list::-webkit-scrollbar {
     width: 6px;
 }
 
 .history-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
+    background: #2d2d2d;
     border-radius: 3px;
 }
 
@@ -516,4 +471,79 @@ body {
     background: #7c4dff;
     border-radius: 3px;
 }
+
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: #9561fd;
 }
+
+.history-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.history-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.history-direction-icon {
+    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.history-item.outgoing .history-direction-icon {
+    color: #ff5252;
+}
+
+.history-item.incoming .history-direction-icon {
+    color: #4caf50;
+}
+
+.history-username {
+    font-weight: 500;
+    color: #ffffff;
+    display: block;
+}
+
+.history-date {
+    font-size: 12px;
+    color: #aaaaaa;
+    display: block;
+    margin-top: 3px;
+}
+
+.history-amount {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.history-item.outgoing .history-amount {
+    color: #ff5252;
+}
+
+.history-item.incoming .history-amount {
+    color: #4caf50;
+}
+
+.empty-history {
+    text-align: center;
+    color: #777;
+    padding: 20px;
+    font-size: 14px;
+}
+  }
