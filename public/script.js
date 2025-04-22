@@ -210,11 +210,16 @@ async function loadData() {
                 coins = data.balance || 0;
                 highscore = data.highscore || 0;
                 
-                // Преобразуем transfers в массив, если это объект
+                // Конвертируем transfers в массив если это объект
                 if (data.transfers && typeof data.transfers === 'object' && !Array.isArray(data.transfers)) {
                     transferHistory = Object.values(data.transfers);
                 } else {
                     transferHistory = data.transfers || [];
+                }
+                
+                // Синхронизируем с сервером
+                if (coins !== data.balance) {
+                    coins = data.balance;
                 }
                 
                 updateDisplays();
