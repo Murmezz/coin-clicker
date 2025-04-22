@@ -47,15 +47,32 @@ function renderTransferHistory() {
     const historyList = getElement('history-list');
     if (!historyList) return;
     
-    historyList.innerHTML = transferHistory.length === 0 
-        ? '<p>Нет истории переводов</p>'
-        : transferHistory.slice(0, 10).map(tx => `
-            <div class="history-item ${tx.status}">
+    // Сортируем по дате (новые сверху)
+    const sortedHistory = [...transferHistory].sort((a, b) => 
+        new Date(b.date) - new Date(a.date)
+    );
+    
+    historyList.innerHTML = sortedHistory.length === 0 
+        ? '<div class="empty-history">История переводов пуста</div>'
+        : sortedHistory.map(tx => `
+            <div class="history-item ${tx.from === currentUsername ? 'outgoing' : 'incoming'}">
                 <div>
-                    <span class="history-username">${tx.to}</span>
-                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
+                    <span class="history-username">
+                        ${tx.from === currentUsername ? tx.to : tx.from}
+                    </span>
+                    <span class="history-date">
+                        ${new Date(tx.date).toLocaleString('ru-RU', {
+                            day: 'numeric',
+                            month: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </span>
                 </div>
-                <span class="history-amount">-${tx.amount}</span>
+                <span class="history-amount">
+                    ${tx.from === currentUsername ? '-' : '+'}${tx.amount}
+                </span>
             </div>
         `).join('');
 }
@@ -117,7 +134,7 @@ async function findUser(username) {
     }
 }
 
-// Перевод средств
+// Функция перевода средств (обновленная)
 async function makeTransfer(recipientUsername, amount) {
     try {
         // Проверки
@@ -134,27 +151,32 @@ async function makeTransfer(recipientUsername, amount) {
             return { success: false, message: 'Некорректная сумма' };
         }
 
+        // Блокировка повторных отправок
+        const sendButton = document.querySelector('#send-coins');
+        if (sendButton) sendButton.disabled = true;
+
         // Подготовка транзакции
         const transaction = {
             date: new Date().toISOString(),
             from: currentUsername,
             to: recipientUsername,
             amount: amount,
-            status: 'completed'
+            status: 'completed',
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 5)
         };
 
         // Атомарное обновление
         const updates = {};
-        updates[`users/${USER_ID}/balance`] = coins - amount;
-        updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
-        updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
-        updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
+        updates[`users/${USER_ID}/balance`] = firebase.database.ServerValue.increment(-amount);
+        updates[`users/${USER_ID}/transfers/${transaction.id}`] = transaction;
+        updates[`users/${recipient.userId}/balance`] = firebase.database.ServerValue.increment(amount);
+        updates[`users/${recipient.userId}/transfers/${transaction.id}`] = transaction;
 
         await db.ref().update(updates);
 
         // Обновление локальных данных
         coins -= amount;
-        transferHistory.push(transaction);
+        transferHistory.unshift(transaction); // Добавляем в начало массива
         updateDisplays();
         renderTransferHistory();
 
@@ -162,6 +184,9 @@ async function makeTransfer(recipientUsername, amount) {
     } catch (error) {
         console.error('Ошибка перевода:', error);
         return { success: false, message: 'Ошибка при переводе' };
+    } finally {
+        const sendButton = document.querySelector('#send-coins');
+        if (sendButton) sendButton.disabled = false;
     }
 }
 
