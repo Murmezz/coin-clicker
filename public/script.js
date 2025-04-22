@@ -20,93 +20,33 @@ let currentUsername = '';
 let coins = 0;
 let highscore = 0;
 let transferHistory = [];
+let isTransferInProgress = false;
 
-// Функция для безопасного получения элемента
-function getElement(id) {
-    return document.getElementById(id);
-}
-
-// Обновление интерфейса
-function updateDisplays() {
-    const coinsDisplay = getElement('coins');
-    const highscoreDisplay = getElement('highscore');
-    if (coinsDisplay) coinsDisplay.textContent = coins;
-    if (highscoreDisplay) highscoreDisplay.textContent = highscore;
-}
-
-// Показать сообщение
-function showMessage(text, type) {
-    const messageDiv = getElement('transfer-message');
-    if (!messageDiv) return;
-    messageDiv.textContent = text;
-    messageDiv.className = `transfer-message ${type}-message`;
-}
-
-// Рендер истории переводов
-function renderTransferHistory() {
-    const historyList = getElement('history-list');
-    if (!historyList) return;
-    
-    // Проверяем и инициализируем transferHistory если это не массив
-    if (!Array.isArray(transferHistory)) {
-        transferHistory = [];
-    }
-    
-    // Сортируем по дате (новые сверху)
-    const sortedHistory = [...transferHistory].sort((a, b) => 
-        new Date(b.date) - new Date(a.date)
-    );
-    
-    historyList.innerHTML = sortedHistory.length === 0 
-        ? '<div class="empty-history">Нет переводов</div>'
-        : sortedHistory.map(tx => `
-            <div class="history-item ${tx.from === currentUsername ? 'outgoing' : 'incoming'}">
-                <div class="history-info">
-                    <span class="history-direction-icon">
-                        ${tx.from === currentUsername ? '➚' : '➘'}
-                    </span>
-                    <div>
-                        <span class="history-username">
-                            ${tx.from === currentUsername ? tx.to : tx.from}
-                        </span>
-                        <span class="history-date">
-                            ${new Date(tx.date).toLocaleString('ru-RU', {
-                                day: 'numeric',
-                                month: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
-                        </span>
-                    </div>
-                </div>
-                <span class="history-amount">
-                    ${tx.from === currentUsername ? '-' : '+'}${tx.amount}
-                </span>
-            </div>
-        `).join('');
-}
-
-// Инициализация пользователя
+// Инициализация пользователя (исправленная)
 async function initUser() {
     try {
         // Аутентификация
         const { user } = await auth.signInAnonymously();
         USER_ID = user.uid;
 
-        // Для Telegram пользователей
+        // Для Telegram WebApp
         if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
             const tgUser = Telegram.WebApp.initDataUnsafe.user;
             currentUsername = tgUser.username ? `@${tgUser.username.toLowerCase()}` : `@user${tgUser.id.slice(-4)}`;
         } else {
-            currentUsername = `@user_${Math.random().toString(36).substr(2, 8)}`;
+            currentUsername = `@anon_${Math.random().toString(36).substr(2, 8)}`;
         }
 
         // Создаем/обновляем запись пользователя
-        await db.ref(`users/${USER_ID}`).update({
+        await db.ref(`users/${USER_ID}`).set({
             username: currentUsername,
-            balance: firebase.database.ServerValue.increment(0),
-            highscore: firebase.database.ServerValue.increment(0),
-            transfers: []
+            balance: 100, // Стартовый баланс
+            highscore: 0,
+            transfers: {}
+        }, (error) => {
+            if (error) {
+                console.error('Ошибка создания пользователя:', error);
+            }
         });
 
     } catch (error) {
@@ -116,227 +56,93 @@ async function initUser() {
     }
 }
 
-// Поиск пользователя по юзернейму
-async function findUser(username) {
-    if (!username.startsWith('@')) return null;
-    
-    try {
-        const searchUsername = username.toLowerCase();
-        const snapshot = await db.ref('users')
-            .orderByChild('username')
-            .equalTo(searchUsername)
-            .once('value');
-        
-        if (snapshot.exists()) {
-            const users = snapshot.val();
-            const userId = Object.keys(users)[0];
-            return { 
-                userId,
-                username: users[userId].username,
-                balance: users[userId].balance || 0,
-                transfers: users[userId].transfers || []
-            };
-        }
-        return null;
-    } catch (error) {
-        console.error('Ошибка поиска:', error);
-        return null;
-    }
-}
-
-// Перевод средств
+// Перевод средств (защищенный от дублирования)
 async function makeTransfer(recipientUsername, amount) {
+    if (isTransferInProgress) return { success: false, message: 'Перевод уже выполняется' };
+    isTransferInProgress = true;
+
     const sendButton = document.querySelector('#send-coins');
     try {
         // Проверки
-        if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
+        recipientUsername = recipientUsername.toLowerCase();
+        if (recipientUsername === currentUsername.toLowerCase()) {
             return { success: false, message: 'Нельзя перевести себе' };
         }
         
         const recipient = await findUser(recipientUsername);
         if (!recipient) {
-            return { success: false, message: 'Пользователь не зарегистрирован' };
+            return { success: false, message: 'Пользователь не найден' };
         }
         
         if (amount > coins || amount < 1) {
-            return { success: false, message: 'Некорректная сумма' };
+            return { success: false, message: 'Недостаточно средств' };
         }
 
-        // Блокировка кнопки
-        if (sendButton) sendButton.disabled = true;
-
-        // Подготовка транзакции
-        const transactionId = Date.now().toString();
+        // Генерируем уникальный ID транзакции
+        const transactionId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        
+        // Создаем транзакцию
         const transaction = {
             id: transactionId,
             date: new Date().toISOString(),
             from: currentUsername,
-            to: recipient.username,
+            to: recipientUsername,
             amount: amount,
             status: 'completed'
         };
 
         // Атомарное обновление
         const updates = {};
-        updates[`users/${USER_ID}/balance`] = firebase.database.ServerValue.increment(-amount);
+        updates[`users/${USER_ID}/balance`] = coins - amount;
         updates[`users/${USER_ID}/transfers/${transactionId}`] = transaction;
-        updates[`users/${recipient.userId}/balance`] = firebase.database.ServerValue.increment(amount);
+        updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
         updates[`users/${recipient.userId}/transfers/${transactionId}`] = transaction;
 
+        // Выполняем обновление
         await db.ref().update(updates);
 
-        // Обновление локальных данных
+        // Обновляем локальные данные
         coins -= amount;
-        if (!Array.isArray(transferHistory)) transferHistory = [];
         transferHistory.unshift(transaction);
         updateDisplays();
         renderTransferHistory();
 
-        return { success: true, message: `Перевод ${amount} коинов успешен!` };
+        return { success: true, message: `Переведено ${amount} коинов` };
     } catch (error) {
         console.error('Ошибка перевода:', error);
-        return { success: false, message: 'Ошибка при переводе' };
+        return { success: false, message: 'Ошибка сервера' };
     } finally {
+        isTransferInProgress = false;
         if (sendButton) sendButton.disabled = false;
     }
 }
 
-// Загрузка данных
+// Загрузка данных (с защитой от ошибок)
 async function loadData() {
     return new Promise((resolve) => {
         db.ref(`users/${USER_ID}`).on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                coins = data.balance || 0;
-                highscore = data.highscore || 0;
-                
-                // Конвертируем transfers в массив если это объект
-                if (data.transfers && typeof data.transfers === 'object' && !Array.isArray(data.transfers)) {
-                    transferHistory = Object.values(data.transfers);
-                } else {
-                    transferHistory = data.transfers || [];
+            try {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    coins = data.balance || 0;
+                    highscore = data.highscore || 0;
+                    
+                    // Конвертируем transfers в массив
+                    transferHistory = data.transfers 
+                        ? Object.values(data.transfers).sort((a, b) => 
+                            new Date(b.date) - new Date(a.date))
+                        : [];
+                    
+                    updateDisplays();
+                    renderTransferHistory();
                 }
-                
-                // Синхронизируем с сервером
-                if (coins !== data.balance) {
-                    coins = data.balance;
-                }
-                
-                updateDisplays();
-                renderTransferHistory();
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
             }
+            resolve();
+        }, (error) => {
+            console.error('Ошибка подписки на данные:', error);
             resolve();
         });
     });
 }
-
-// Показать страницу перевода
-function showTransferPage() {
-    const pagesContainer = getElement('pages-container');
-    const transferPage = getElement('transfer-page');
-    
-    if (!pagesContainer || !transferPage) return;
-    
-    pagesContainer.innerHTML = '';
-    const page = transferPage.cloneNode(true);
-    pagesContainer.appendChild(page);
-    pagesContainer.style.display = 'block';
-
-    // Форма перевода
-    const sendButton = page.querySelector('#send-coins');
-    const usernameInput = page.querySelector('#username');
-    const amountInput = page.querySelector('#amount');
-    
-    if (!sendButton || !usernameInput || !amountInput) return;
-    
-    sendButton.addEventListener('click', async () => {
-        const recipient = usernameInput.value.trim();
-        const amount = parseInt(amountInput.value);
-        
-        if (!recipient || !recipient.startsWith('@')) {
-            showMessage('Введите @username получателя', 'error');
-            return;
-        }
-        
-        const result = await makeTransfer(recipient, amount);
-        showMessage(result.message, result.success ? 'success' : 'error');
-        
-        if (result.success) {
-            usernameInput.value = '';
-            amountInput.value = '';
-        }
-    });
-
-    // Кнопка "Назад"
-    const backButton = page.querySelector('.back-button');
-    if (backButton) {
-        backButton.addEventListener('click', () => {
-            pagesContainer.style.display = 'none';
-        });
-    }
-    
-    // Инициализация истории
-    renderTransferHistory();
-}
-
-// Инициализация клика по монете
-function initCoinClick() {
-    const coinButton = document.querySelector('.coin-button');
-    if (coinButton) {
-        coinButton.addEventListener('click', async () => {
-            coins++;
-            if (coins > highscore) highscore = coins;
-            updateDisplays();
-            await db.ref(`users/${USER_ID}`).update({ 
-                balance: coins, 
-                highscore 
-            });
-        });
-    }
-}
-
-// Инициализация навигации
-function initNavigation() {
-    document.querySelectorAll('.nav-button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (btn.dataset.page === 'transfer') {
-                showTransferPage();
-            } else {
-                const pagesContainer = getElement('pages-container');
-                const defaultPage = getElement('default-page');
-                
-                if (!pagesContainer || !defaultPage) return;
-                
-                const page = defaultPage.cloneNode(true);
-                const title = page.querySelector('.page-title');
-                if (title) title.textContent = btn.textContent;
-                
-                pagesContainer.innerHTML = '';
-                pagesContainer.appendChild(page);
-                pagesContainer.style.display = 'block';
-                
-                const backButton = page.querySelector('.back-button');
-                if (backButton) {
-                    backButton.addEventListener('click', () => {
-                        pagesContainer.style.display = 'none';
-                    });
-                }
-            }
-        });
-    });
-}
-
-// Основная функция инициализации
-async function initializeApp() {
-    await initUser();
-    await loadData();
-    initCoinClick();
-    initNavigation();
-}
-
-// Запуск приложения
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApp().catch(error => {
-        console.error('Ошибка инициализации приложения:', error);
-    });
-});
