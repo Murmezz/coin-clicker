@@ -21,27 +21,37 @@ let coins = 0;
 let highscore = 0;
 let transferHistory = [];
 
-// Функция для обновления интерфейса
+// Функция для безопасного получения элемента
+function getElement(id) {
+    const el = document.getElementById(id);
+    if (!el) console.error(`Element #${id} not found`);
+    return el;
+}
+
+// Обновление интерфейса
 function updateDisplays() {
-    const coinsDisplay = document.getElementById('coins');
-    const highscoreDisplay = document.getElementById('highscore');
+    const coinsDisplay = getElement('coins');
+    const highscoreDisplay = getElement('highscore');
     
     if (coinsDisplay) coinsDisplay.textContent = coins;
     if (highscoreDisplay) highscoreDisplay.textContent = highscore;
 }
 
-// Функция для отображения сообщений
-function showMessage(text, type, container) {
-    if (!container) return;
-    container.textContent = text;
-    container.className = `transfer-message ${type}-message`;
+// Показать сообщение
+function showMessage(text, type) {
+    const messageDiv = getElement('transfer-message');
+    if (!messageDiv) return;
+    
+    messageDiv.textContent = text;
+    messageDiv.className = `transfer-message ${type}-message`;
 }
 
-// Функция для рендера истории переводов
-function renderTransferHistory(container) {
-    if (!container) return;
+// Рендер истории переводов
+function renderTransferHistory() {
+    const historyList = getElement('history-list');
+    if (!historyList) return;
     
-    container.innerHTML = transferHistory.length === 0 
+    historyList.innerHTML = transferHistory.length === 0 
         ? '<p>Нет истории переводов</p>'
         : transferHistory.slice(0, 10).map(tx => `
             <div class="history-item ${tx.status}">
@@ -57,29 +67,29 @@ function renderTransferHistory(container) {
 // Инициализация пользователя
 async function initTelegramUser() {
     try {
-        await auth.signInAnonymously();
-        const user = auth.currentUser;
+        // Аутентификация
+        const { user } = await auth.signInAnonymously();
         
         if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
             const tgUser = Telegram.WebApp.initDataUnsafe.user;
             USER_ID = `tg_${tgUser.id}`;
             currentUsername = tgUser.username ? `@${tgUser.username.toLowerCase()}` : `@user${tgUser.id.slice(-4)}`;
             
-            // Проверяем/создаем запись пользователя
-            const userRef = db.ref(`users/${USER_ID}`);
-            const snapshot = await userRef.once('value');
-            
-            if (!snapshot.exists()) {
-                await userRef.set({
-                    username: currentUsername,
-                    balance: 100,
-                    highscore: 0,
-                    transfers: []
-                });
-            }
+            // Создаем/обновляем запись пользователя
+            await db.ref(`users/${USER_ID}`).update({
+                username: currentUsername,
+                balance: firebase.database.ServerValue.increment(0), // Инициализация без изменения баланса
+                highscore: firebase.database.ServerValue.increment(0)
+            });
         } else {
             USER_ID = `anon_${user.uid.slice(-6)}`;
             currentUsername = `@anon_${Math.random().toString(36).substr(2, 5)}`;
+            await db.ref(`users/${USER_ID}`).set({
+                username: currentUsername,
+                balance: 100,
+                highscore: 0,
+                transfers: []
+            });
         }
     } catch (error) {
         console.error('Auth error:', error);
@@ -87,13 +97,17 @@ async function initTelegramUser() {
     }
 }
 
-// Поиск пользователя в базе
-async function findUserInDatabase(username) {
+// Поиск пользователя по юзернейму
+async function findUserByUsername(username) {
     if (!username.startsWith('@')) return null;
     
     const cleanUsername = username.toLowerCase();
     try {
-        const snapshot = await db.ref('users').orderByChild('username').equalTo(cleanUsername).once('value');
+        const snapshot = await db.ref('users')
+            .orderByChild('username')
+            .equalTo(cleanUsername)
+            .once('value');
+        
         if (snapshot.exists()) {
             const userData = snapshot.val();
             const userId = Object.keys(userData)[0];
@@ -105,29 +119,24 @@ async function findUserInDatabase(username) {
     return null;
 }
 
-// Перевод монет с проверками
+// Перевод монет
 async function transferCoins(recipientUsername, amount) {
     try {
-        // Проверка ввода
+        // Валидация
         if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
             return { success: false, message: 'Нельзя перевести себе' };
         }
         
-        if (isNaN(amount) || amount < 1) {
-            return { success: false, message: 'Некорректная сумма' };
+        const recipient = await findUserByUsername(recipientUsername);
+        if (!recipient) {
+            return { success: false, message: 'Пользователь не найден' };
         }
         
-        if (amount > coins) {
-            return { success: false, message: 'Недостаточно средств' };
+        if (amount > coins || amount < 1) {
+            return { success: false, message: 'Некорректная сумма' };
         }
 
-        // Поиск получателя
-        const recipient = await findUserInDatabase(recipientUsername);
-        if (!recipient) {
-            return { success: false, message: 'Пользователь не найден в системе' };
-        }
-
-        // Подготовка транзакции
+        // Создаем транзакцию
         const date = new Date().toISOString();
         const transaction = {
             date,
@@ -137,14 +146,13 @@ async function transferCoins(recipientUsername, amount) {
             status: 'completed'
         };
 
-        // Атомарное обновление балансов
+        // Атомарное обновление
         const updates = {};
         updates[`users/${USER_ID}/balance`] = coins - amount;
         updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
-        updates[`users/${recipient.userId}/balance`] = recipient.balance + amount;
+        updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
         updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
 
-        // Выполняем обновление
         await db.ref().update(updates);
 
         // Обновляем локальные данные
@@ -152,10 +160,10 @@ async function transferCoins(recipientUsername, amount) {
         transferHistory.push(transaction);
         updateDisplays();
 
-        return { success: true, message: `Переведено ${amount} коинов пользователю ${recipientUsername}` };
+        return { success: true, message: `Успешно переведено ${amount} коинов` };
     } catch (error) {
-        console.error('Ошибка перевода:', error);
-        return { success: false, message: 'Ошибка при переводе. Проверьте подключение.' };
+        console.error('Transfer error:', error);
+        return { success: false, message: 'Ошибка перевода' };
     }
 }
 
@@ -169,6 +177,7 @@ async function loadUserData() {
                 highscore = data.highscore || 0;
                 transferHistory = data.transfers || [];
                 updateDisplays();
+                renderTransferHistory();
             }
             resolve();
         });
@@ -177,48 +186,39 @@ async function loadUserData() {
 
 // Показать страницу перевода
 function showTransferPage() {
-    const pagesContainer = document.getElementById('pages-container');
-    const transferPageTemplate = document.getElementById('transfer-page');
+    const pagesContainer = getElement('pages-container');
+    const transferPage = getElement('transfer-page');
     
-    if (!pagesContainer || !transferPageTemplate) {
-        console.error('Required elements not found');
-        return;
-    }
-
-    const page = transferPageTemplate.cloneNode(true);
+    if (!pagesContainer || !transferPage) return;
+    
     pagesContainer.innerHTML = '';
+    const page = transferPage.cloneNode(true);
     pagesContainer.appendChild(page);
     pagesContainer.style.display = 'block';
 
-    // Находим элементы формы
+    // Обработчики формы
     const sendButton = page.querySelector('#send-coins');
     const usernameInput = page.querySelector('#username');
     const amountInput = page.querySelector('#amount');
-    const messageDiv = page.querySelector('#transfer-message');
-    const historyList = page.querySelector('#history-list');
-
-    if (!sendButton || !usernameInput || !amountInput || !messageDiv || !historyList) {
-        console.error('Form elements not found');
-        return;
-    }
-
-    // Обработчик отправки
+    
+    if (!sendButton || !usernameInput || !amountInput) return;
+    
     sendButton.addEventListener('click', async () => {
         const recipient = usernameInput.value.trim();
         const amount = parseInt(amountInput.value);
-
+        
         if (!recipient || !recipient.startsWith('@')) {
-            showMessage('Введите @username получателя', 'error', messageDiv);
+            showMessage('Введите @username получателя', 'error');
             return;
         }
-
+        
         const result = await transferCoins(recipient, amount);
-        showMessage(result.message, result.success ? 'success' : 'error', messageDiv);
+        showMessage(result.message, result.success ? 'success' : 'error');
         
         if (result.success) {
             usernameInput.value = '';
             amountInput.value = '';
-            renderTransferHistory(historyList);
+            renderTransferHistory();
         }
     });
 
@@ -229,9 +229,6 @@ function showTransferPage() {
             pagesContainer.style.display = 'none';
         });
     }
-
-    // Показ истории
-    renderTransferHistory(historyList);
 }
 
 // Инициализация приложения
@@ -259,17 +256,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (btn.dataset.page === 'transfer') {
                 showTransferPage();
             } else {
-                const pagesContainer = document.getElementById('pages-container');
-                const defaultPageTemplate = document.getElementById('default-page');
+                const pagesContainer = getElement('pages-container');
+                const defaultPage = getElement('default-page');
                 
-                if (!pagesContainer || !defaultPageTemplate) return;
+                if (!pagesContainer || !defaultPage) return;
                 
-                const page = defaultPageTemplate.cloneNode(true);
-                const titleElement = page.querySelector('.page-title');
-                
-                if (titleElement) {
-                    titleElement.textContent = btn.textContent;
-                }
+                const page = defaultPage.cloneNode(true);
+                const title = page.querySelector('.page-title');
+                if (title) title.textContent = btn.textContent;
                 
                 pagesContainer.innerHTML = '';
                 pagesContainer.appendChild(page);
