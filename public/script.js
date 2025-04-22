@@ -94,17 +94,11 @@ async function findUser(username) {
     if (!username.startsWith('@')) return null;
     
     try {
-        // Приводим к нижнему регистру для поиска
         const searchUsername = username.toLowerCase();
-        
-        // Получаем токен аутентификации
-        const token = await auth.currentUser.getIdToken();
-        
-        // Альтернативный метод поиска через фильтрацию
         const snapshot = await db.ref('users')
             .orderByChild('username')
             .equalTo(searchUsername)
-            .once('value', { token });
+            .once('value');
         
         if (snapshot.exists()) {
             const users = snapshot.val();
@@ -119,50 +113,25 @@ async function findUser(username) {
         return null;
     } catch (error) {
         console.error('Ошибка поиска:', error);
-        // Fallback: попробуем получить только нужного пользователя
-        try {
-            const allUsers = await db.ref('users').once('value');
-            const users = allUsers.val() || {};
-            for (const uid in users) {
-                if (users[uid].username && 
-                    users[uid].username.toLowerCase() === username.toLowerCase()) {
-                    return {
-                        userId: uid,
-                        ...users[uid]
-                    };
-                }
-            }
-            return null;
-        } catch (fallbackError) {
-            console.error('Fallback search failed:', fallbackError);
-            return null;
-        }
+        return null;
     }
 }
 
 // Перевод средств
 async function makeTransfer(recipientUsername, amount) {
     try {
-        // Проверка аутентификации
-        if (!auth.currentUser) {
-            await auth.signInAnonymously();
+        // Проверки
+        if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
+            return { success: false, message: 'Нельзя перевести себе' };
         }
         
-        // Проверка ввода
-        if (!recipientUsername || !recipientUsername.startsWith('@')) {
-            return { success: false, message: 'Некорректный юзернейм' };
-        }
-        
-        // Приводим юзернейм к нижнему регистру
-        recipientUsername = recipientUsername.toLowerCase();
-        
-        // Поиск получателя
         const recipient = await findUser(recipientUsername);
         if (!recipient) {
-            return { 
-                success: false, 
-                message: 'Пользователь @' + recipientUsername.slice(1) + ' не найден' 
-            };
+            return { success: false, message: 'Пользователь не зарегистрирован' };
+        }
+        
+        if (amount > coins || amount < 1) {
+            return { success: false, message: 'Некорректная сумма' };
         }
 
         // Подготовка транзакции
@@ -173,12 +142,6 @@ async function makeTransfer(recipientUsername, amount) {
             amount: amount,
             status: 'completed'
         };
-
-            } catch (error) {
-        console.error('Ошибка перевода:', error);
-        return { success: false, message: 'Ошибка сервера' };
-    }
-}
 
         // Атомарное обновление
         const updates = {};
@@ -218,35 +181,6 @@ async function loadData() {
         });
     });
 }
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', async () => {
-    await initUser();
-    await loadData();
-
-    // Клик по монете
-    const coinButton = document.querySelector('.coin-button');
-    if (coinButton) {
-        coinButton.addEventListener('click', async () => {
-            coins++;
-            if (coins > highscore) highscore = coins;
-            updateDisplays();
-            await db.ref(`users/${USER_ID}`).update({ 
-                balance: coins, 
-                highscore 
-            });
-        });
-    }
-
-    // Навигация
-    document.querySelectorAll('.nav-button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (btn.dataset.page === 'transfer') {
-                showTransferPage();
-            }
-        });
-    });
-});
 
 // Показать страницу перевода
 function showTransferPage() {
@@ -293,3 +227,39 @@ function showTransferPage() {
         });
     }
 }
+
+// Основная функция инициализации
+async function initializeApp() {
+    await initUser();
+    await loadData();
+
+    // Клик по монете
+    const coinButton = document.querySelector('.coin-button');
+    if (coinButton) {
+        coinButton.addEventListener('click', async () => {
+            coins++;
+            if (coins > highscore) highscore = coins;
+            updateDisplays();
+            await db.ref(`users/${USER_ID}`).update({ 
+                balance: coins, 
+                highscore 
+            });
+        });
+    }
+
+    // Навигация
+    document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.page === 'transfer') {
+                showTransferPage();
+            }
+        });
+    });
+}
+
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp().catch(error => {
+        console.error('Ошибка инициализации приложения:', error);
+    });
+});
