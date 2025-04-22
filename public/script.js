@@ -47,28 +47,37 @@ function renderTransferHistory() {
     const historyList = getElement('history-list');
     if (!historyList) return;
     
+    // Проверяем и инициализируем transferHistory если это не массив
+    if (!Array.isArray(transferHistory)) {
+        transferHistory = [];
+    }
+    
     // Сортируем по дате (новые сверху)
     const sortedHistory = [...transferHistory].sort((a, b) => 
         new Date(b.date) - new Date(a.date)
     );
     
     historyList.innerHTML = sortedHistory.length === 0 
-        ? '<div class="empty-history">История переводов пуста</div>'
+        ? '<div class="empty-history">Нет переводов</div>'
         : sortedHistory.map(tx => `
             <div class="history-item ${tx.from === currentUsername ? 'outgoing' : 'incoming'}">
-                <div>
-                    <span class="history-username">
-                        ${tx.from === currentUsername ? tx.to : tx.from}
+                <div class="history-info">
+                    <span class="history-direction-icon">
+                        ${tx.from === currentUsername ? '➚' : '➘'}
                     </span>
-                    <span class="history-date">
-                        ${new Date(tx.date).toLocaleString('ru-RU', {
-                            day: 'numeric',
-                            month: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}
-                    </span>
+                    <div>
+                        <span class="history-username">
+                            ${tx.from === currentUsername ? tx.to : tx.from}
+                        </span>
+                        <span class="history-date">
+                            ${new Date(tx.date).toLocaleString('ru-RU', {
+                                day: 'numeric',
+                                month: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                        </span>
+                    </div>
                 </div>
                 <span class="history-amount">
                     ${tx.from === currentUsername ? '-' : '+'}${tx.amount}
@@ -96,7 +105,8 @@ async function initUser() {
         await db.ref(`users/${USER_ID}`).update({
             username: currentUsername,
             balance: firebase.database.ServerValue.increment(0),
-            highscore: firebase.database.ServerValue.increment(0)
+            highscore: firebase.database.ServerValue.increment(0),
+            transfers: []
         });
 
     } catch (error) {
@@ -134,8 +144,9 @@ async function findUser(username) {
     }
 }
 
-// Функция перевода средств (обновленная)
+// Перевод средств
 async function makeTransfer(recipientUsername, amount) {
+    const sendButton = document.querySelector('#send-coins');
     try {
         // Проверки
         if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
@@ -151,32 +162,33 @@ async function makeTransfer(recipientUsername, amount) {
             return { success: false, message: 'Некорректная сумма' };
         }
 
-        // Блокировка повторных отправок
-        const sendButton = document.querySelector('#send-coins');
+        // Блокировка кнопки
         if (sendButton) sendButton.disabled = true;
 
         // Подготовка транзакции
+        const transactionId = Date.now().toString();
         const transaction = {
+            id: transactionId,
             date: new Date().toISOString(),
             from: currentUsername,
-            to: recipientUsername,
+            to: recipient.username,
             amount: amount,
-            status: 'completed',
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 5)
+            status: 'completed'
         };
 
         // Атомарное обновление
         const updates = {};
         updates[`users/${USER_ID}/balance`] = firebase.database.ServerValue.increment(-amount);
-        updates[`users/${USER_ID}/transfers/${transaction.id}`] = transaction;
+        updates[`users/${USER_ID}/transfers/${transactionId}`] = transaction;
         updates[`users/${recipient.userId}/balance`] = firebase.database.ServerValue.increment(amount);
-        updates[`users/${recipient.userId}/transfers/${transaction.id}`] = transaction;
+        updates[`users/${recipient.userId}/transfers/${transactionId}`] = transaction;
 
         await db.ref().update(updates);
 
         // Обновление локальных данных
         coins -= amount;
-        transferHistory.unshift(transaction); // Добавляем в начало массива
+        if (!Array.isArray(transferHistory)) transferHistory = [];
+        transferHistory.unshift(transaction);
         updateDisplays();
         renderTransferHistory();
 
@@ -185,7 +197,6 @@ async function makeTransfer(recipientUsername, amount) {
         console.error('Ошибка перевода:', error);
         return { success: false, message: 'Ошибка при переводе' };
     } finally {
-        const sendButton = document.querySelector('#send-coins');
         if (sendButton) sendButton.disabled = false;
     }
 }
@@ -198,7 +209,14 @@ async function loadData() {
                 const data = snapshot.val();
                 coins = data.balance || 0;
                 highscore = data.highscore || 0;
-                transferHistory = data.transfers || [];
+                
+                // Преобразуем transfers в массив, если это объект
+                if (data.transfers && typeof data.transfers === 'object' && !Array.isArray(data.transfers)) {
+                    transferHistory = Object.values(data.transfers);
+                } else {
+                    transferHistory = data.transfers || [];
+                }
+                
                 updateDisplays();
                 renderTransferHistory();
             }
@@ -251,14 +269,13 @@ function showTransferPage() {
             pagesContainer.style.display = 'none';
         });
     }
+    
+    // Инициализация истории
+    renderTransferHistory();
 }
 
-// Основная функция инициализации
-async function initializeApp() {
-    await initUser();
-    await loadData();
-
-    // Клик по монете
+// Инициализация клика по монете
+function initCoinClick() {
     const coinButton = document.querySelector('.coin-button');
     if (coinButton) {
         coinButton.addEventListener('click', async () => {
@@ -271,15 +288,45 @@ async function initializeApp() {
             });
         });
     }
+}
 
-    // Навигация
+// Инициализация навигации
+function initNavigation() {
     document.querySelectorAll('.nav-button').forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.dataset.page === 'transfer') {
                 showTransferPage();
+            } else {
+                const pagesContainer = getElement('pages-container');
+                const defaultPage = getElement('default-page');
+                
+                if (!pagesContainer || !defaultPage) return;
+                
+                const page = defaultPage.cloneNode(true);
+                const title = page.querySelector('.page-title');
+                if (title) title.textContent = btn.textContent;
+                
+                pagesContainer.innerHTML = '';
+                pagesContainer.appendChild(page);
+                pagesContainer.style.display = 'block';
+                
+                const backButton = page.querySelector('.back-button');
+                if (backButton) {
+                    backButton.addEventListener('click', () => {
+                        pagesContainer.style.display = 'none';
+                    });
+                }
             }
         });
     });
+}
+
+// Основная функция инициализации
+async function initializeApp() {
+    await initUser();
+    await loadData();
+    initCoinClick();
+    initNavigation();
 }
 
 // Запуск приложения
