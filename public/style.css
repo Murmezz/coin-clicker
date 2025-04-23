@@ -606,3 +606,27 @@ body {
     }
 }  
   
+/* 3D-эффект при наведении */
+.coin-container {
+    perspective: 1000px;
+}
+
+.coin-button {
+    transform-style: preserve-3d;
+    transition: all 0.3s ease;
+}
+
+.coin-button:hover {
+    transform: rotateY(20deg) scale(1.05);
+}
+
+/* Анимация "дрожания" */
+@keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+}
+
+.coin-button:active {
+    animation: shake 0.3s ease, pulse 0.3s ease;
+}
