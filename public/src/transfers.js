@@ -1,5 +1,6 @@
 import { db } from './firebase.js';
-import { getCurrentUserData, updateUserData } from './user.js'; // Новый импорт
+import { getUserId, getUsername, getCoins, getTransferHistory, updateUserState } from './user.js';
+import { updateDisplays } from './ui.js';
 
 export async function findUser(username) {
     if (!username.startsWith('@')) return null;
@@ -30,8 +31,11 @@ export async function findUser(username) {
 
 export async function makeTransfer(recipientUsername, amount) {
     try {
-        const { currentUsername, coins, USER_ID } = getCurrentUserData();
-        
+        const currentUsername = getUsername();
+        const coins = getCoins();
+        const USER_ID = getUserId();
+        const transferHistory = getTransferHistory();
+
         // Проверки
         if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
             return { success: false, message: 'Нельзя перевести себе' };
@@ -46,7 +50,6 @@ export async function makeTransfer(recipientUsername, amount) {
             return { success: false, message: 'Некорректная сумма' };
         }
 
-        // Подготовка транзакции
         const transaction = {
             date: new Date().toISOString(),
             from: currentUsername,
@@ -55,20 +58,20 @@ export async function makeTransfer(recipientUsername, amount) {
             status: 'completed'
         };
 
-        // Атомарное обновление
         const updates = {};
         updates[`users/${USER_ID}/balance`] = coins - amount;
-        updates[`users/${USER_ID}/transfers`] = [...getCurrentUserData().transferHistory, transaction];
+        updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
         updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
         updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
 
         await db.ref().update(updates);
 
-        // Обновление локальных данных
-        await updateUserData({
+        updateUserState({
             coins: coins - amount,
-            transferHistory: [...getCurrentUserData().transferHistory, transaction]
+            transferHistory: [...transferHistory, transaction]
         });
+        
+        updateDisplays();
 
         return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
@@ -81,7 +84,7 @@ export function renderTransferHistory() {
     const historyList = document.getElementById('history-list');
     if (!historyList) return;
     
-    const { transferHistory } = getCurrentUserData();
+    const transferHistory = getTransferHistory();
     
     historyList.innerHTML = transferHistory.length === 0 
         ? '<p>Нет истории переводов</p>'
