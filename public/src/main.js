@@ -1,11 +1,13 @@
-import { initUser, loadData, updateUserState } from './user.js';
+import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
 import { showTransferPage, updateDisplays } from './ui.js';
 import { db } from './firebase.js';
 
 async function handleCoinClick() {
     try {
-        const newCoins = getCoins() + 1;
-        const newHighscore = Math.max(getHighscore(), newCoins);
+        const currentCoins = getCoins();
+        const currentHighscore = getHighscore();
+        const newCoins = currentCoins + 1;
+        const newHighscore = Math.max(currentHighscore, newCoins);
         
         await db.ref(`users/${getUserId()}`).update({ 
             balance: newCoins, 
