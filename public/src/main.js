@@ -21,10 +21,15 @@ const handleCoinClick = async (event) => {
     const clickX = event.clientX - rect.left;
     const clickY = event.clientY - rect.top;
     
-    // Анимации
+    // Усиленные анимации
     tiltCoin(coinButton, clickX, clickY);
     createDentEffect(coinButton, clickX, clickY);
     createCoinEffect(event.clientX, event.clientY);
+    
+    // Звук клика (опционально)
+    if (typeof Audio !== 'undefined') {
+        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-coin-win-notification-1992.mp3').play().catch(e => {});
+    }
     
     // Обновление данных
     const newCoins = getCoins() + 1;
