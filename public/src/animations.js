@@ -1,4 +1,13 @@
 // animations.js
+export const createDentEffect = (parentElement, clickX, clickY) => {
+    const dent = document.createElement('div');
+    dent.className = 'dent-effect';
+    dent.style.left = `${clickX}px`;
+    dent.style.top = `${clickY}px`;
+    parentElement.appendChild(dent);
+    setTimeout(() => dent.remove(), 300);
+};
+
 export const createCoinEffect = (startX, startY) => {
     const effect = document.createElement('div');
     effect.className = 'coin-effect';
