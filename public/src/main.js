@@ -17,13 +17,25 @@ const initElements = () => {
 const handleCoinClick = async (event) => {
     const coinButton = event.currentTarget;
     const rect = coinButton.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
     
-    // Вызываем все анимации
-    tiltCoin(coinButton, clickX, clickY);
-    createDentEffect(coinButton, clickX, clickY); // Теперь функция определена
-    createCoinEffect(event.clientX, event.clientY);
+    // 1. Анимации
+    animateCoinClick(coinButton, event.clientX - rect.left, event.clientY - rect.top);
+    createPlusOne(event.clientX, event.clientY);
+    
+    // 2. Обновление данных
+    const newCoins = getCoins() + 1;
+    updateUserState({ 
+        coins: newCoins,
+        highscore: Math.max(getHighscore(), newCoins)
+    });
+    updateDisplays();
+    
+    // 3. Сохранение
+    await db.ref(`users/${getUserId()}`).update({ 
+        balance: newCoins,
+        highscore: Math.max(getHighscore(), newCoins)
+    });
+};
     
     // Обновление данных
     const newCoins = getCoins() + 1;
