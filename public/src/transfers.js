@@ -1,5 +1,5 @@
 import { db } from './firebase.js';
-import { coins, transferHistory } from './user.js';
+import { coins, transferHistory, currentUsername } from './user.js'; // Добавили импорт currentUsername
 import { updateDisplays } from './ui.js';
 
 export async function findUser(username) {
@@ -31,18 +31,30 @@ export async function findUser(username) {
 
 export async function makeTransfer(recipientUsername, amount) {
     try {
+        // Проверки
+        if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
+            return { success: false, message: 'Нельзя перевести себе' };
+        }
+        
         const recipient = await findUser(recipientUsername);
-        if (!recipient) return { success: false, message: 'Пользователь не зарегистрирован' };
-        if (amount > coins || amount < 1) return { success: false, message: 'Некорректная сумма' };
+        if (!recipient) {
+            return { success: false, message: 'Пользователь не зарегистрирован' };
+        }
+        
+        if (amount > coins || amount < 1) {
+            return { success: false, message: 'Некорректная сумма' };
+        }
 
+        // Подготовка транзакции
         const transaction = {
             date: new Date().toISOString(),
-            from: currentUsername,
+            from: currentUsername, // Теперь currentUsername доступен
             to: recipientUsername,
             amount: amount,
             status: 'completed'
         };
 
+        // Атомарное обновление
         const updates = {};
         updates[`users/${USER_ID}/balance`] = coins - amount;
         updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
@@ -51,6 +63,7 @@ export async function makeTransfer(recipientUsername, amount) {
 
         await db.ref().update(updates);
 
+        // Обновление локальных данных
         coins -= amount;
         transferHistory.push(transaction);
         updateDisplays();
