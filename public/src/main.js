@@ -1,12 +1,12 @@
-import { initUser, loadData, coins, highscore } from './user.js';
-import { showTransferPage } from './ui.js';
-import { updateDisplays } from './ui.js';
+import { initUser, loadData, coins, highscore, USER_ID } from './user.js';
+import { showTransferPage, updateDisplays } from './ui.js';
+import { db } from './firebase.js';
 
 async function initializeApp() {
     await initUser();
     await loadData();
 
-    // Coin click handler
+    // Клик по монете
     document.querySelector('.coin-button')?.addEventListener('click', async () => {
         coins++;
         if (coins > highscore) highscore = coins;
@@ -17,10 +17,26 @@ async function initializeApp() {
         });
     });
 
-    // Navigation
+    // Навигация
     document.querySelectorAll('.nav-button').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (btn.dataset.page === 'transfer') showTransferPage();
+            const page = btn.dataset.page;
+            const pagesContainer = document.getElementById('pages-container');
+            
+            if (page === 'transfer') {
+                showTransferPage();
+            } else {
+                const defaultPage = document.getElementById('default-page');
+                pagesContainer.innerHTML = '';
+                const pageClone = defaultPage.cloneNode(true);
+                pageClone.querySelector('.page-title').textContent = btn.textContent;
+                pagesContainer.appendChild(pageClone);
+                pagesContainer.style.display = 'block';
+
+                pageClone.querySelector('.back-button').addEventListener('click', () => {
+                    pagesContainer.style.display = 'none';
+                });
+            }
         });
     });
 }
