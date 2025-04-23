@@ -547,35 +547,58 @@ body {
     font-size: 14px;
 }
 
-/* Анимации */
+/* Добавьте в style.css */
+#effects-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+}
+
 .dent-effect {
     position: absolute;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.3);
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.4);
     border-radius: 50%;
-    pointer-events: none;
-    animation: dent 0.6s ease-out;
+    transform: translate(-50%, -50%) scale(0);
+    animation: dent 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes dent {
     0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
-    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
 }
 
 .coin-effect {
-    position: fixed;
+    position: absolute;
     color: white;
-    font-size: 24px;
+    font-size: 26px;
     font-weight: bold;
-    text-shadow: 0 0 5px rgba(0,0,0,0.8);
-    pointer-events: none;
-    z-index: 1000;
-    animation: floatPlus 1s ease-out forwards;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    animation: floatPlus 0.8s cubic-bezier(0.39, 0.575, 0.565, 1) forwards;
+    opacity: 1;
 }
 
 @keyframes floatPlus {
-    0% { transform: translate(0, 0); opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { transform: translate(var(--target-x), var(--target-y)); opacity: 0; }
+    0% { 
+        transform: translate(0, 0); 
+        opacity: 1; 
+    }
+    50% { 
+        opacity: 0.9;
+        text-shadow: 0 0 15px gold;
+    }
+    100% { 
+        transform: translate(var(--target-x), var(--target-y)) scale(1.5); 
+        opacity: 0;
+    }
+}
+
+.coin-button {
+    transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    transform-style: preserve-3d;
 }
