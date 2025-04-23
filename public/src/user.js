@@ -1,10 +1,20 @@
 import { auth, db } from './firebase.js';
 
-export let USER_ID = '';
-export let currentUsername = '';
-export let coins = 0;
-export let highscore = 0;
-export let transferHistory = [];
+let USER_ID = '';
+let currentUsername = '';
+let coins = 0;
+let highscore = 0;
+let transferHistory = [];
+
+export function getCurrentUserData() {
+    return { USER_ID, currentUsername, coins, highscore, transferHistory };
+}
+
+export async function updateUserData(updates) {
+    if (updates.coins !== undefined) coins = updates.coins;
+    if (updates.highscore !== undefined) highscore = updates.highscore;
+    if (updates.transferHistory !== undefined) transferHistory = updates.transferHistory;
+}
 
 export async function initUser() {
     try {
