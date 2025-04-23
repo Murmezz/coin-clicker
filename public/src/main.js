@@ -2,46 +2,47 @@ import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore 
 import { showTransferPage, updateDisplays } from './ui.js';
 import { db } from './firebase.js';
 
-// Добавьте в самое начало файла (после импортов):
-const effectsContainer = document.createElement('div');
-effectsContainer.className = 'effects-container';
-document.body.appendChild(effectsContainer);
+// Глобальные элементы
+let coinButton = null;
 
-// Добавим в начало файла:
-function createDentEffect(x, y, parent) {
+// Эффект вмятины
+const createDentEffect = (x, y, parent) => {
     const dent = document.createElement('div');
     dent.className = 'dent-effect';
     dent.style.left = `${x}px`;
     dent.style.top = `${y}px`;
     parent.appendChild(dent);
     
-    // Активируем анимацию
-    setTimeout(() => dent.classList.add('active'), 10);
-    
-    // Удаляем после анимации
-    setTimeout(() => dent.remove(), 600);
-}
+    setTimeout(() => {
+        dent.classList.add('active');
+        setTimeout(() => dent.remove(), 600);
+    }, 10);
+};
 
-// Обновленный handleCoinClick:
-const handleCoinClick = async (event) => {
-    const coinButton = event.currentTarget;
+// Обработчик клика
+const onCoinClick = async (event) => {
+    if (!coinButton) return;
     
-    // Эффект продавливания
+    // Координаты клика относительно монеты
+    const rect = coinButton.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    
+    // Анимации
     coinButton.style.transform = 'scale(0.95)';
+    createDentEffect(clickX, clickY, coinButton);
+    
+    // Возврат к исходному состоянию
     setTimeout(() => {
         coinButton.style.transform = '';
     }, 200);
     
-    // Эффект вмятины
-    const rect = coinButton.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
-    createDentEffect(clickX, clickY, coinButton);
-    
-    // Логика клика
-    const currentCoins = getCoins();
-    const newCoins = currentCoins + 1;
-    updateUserState({ coins: newCoins });
+    // Обновление данных
+    const newCoins = getCoins() + 1;
+    updateUserState({ 
+        coins: newCoins,
+        highscore: Math.max(getHighscore(), newCoins)
+    });
     updateDisplays();
     
     try {
@@ -51,37 +52,6 @@ const handleCoinClick = async (event) => {
         });
     } catch (error) {
         console.error('Ошибка сохранения:', error);
-    }
-};
-
-// Обработчик клика
-const handleCoinClick = async (event) => {
-    try {
-        const coin = event.currentTarget;
-        coin.classList.add('coin-clicked');
-        setTimeout(() => coin.classList.remove('coin-clicked'), 100);
-
-        createCoinEffect(event.clientX, event.clientY);
-        createParticles(event.clientX, event.clientY);
-
-        const currentCoins = getCoins();
-        const newCoins = currentCoins + 1;
-        const newHighscore = Math.max(getHighscore(), newCoins);
-        
-        updateUserState({ 
-            coins: newCoins,
-            highscore: newHighscore
-        });
-        
-        updateDisplays();
-        
-        await db.ref(`users/${getUserId()}`).update({ 
-            balance: newCoins, 
-            highscore: newHighscore 
-        });
-
-    } catch (error) {
-        console.error('Ошибка при клике:', error);
     }
 };
 
@@ -108,15 +78,18 @@ const showSimplePage = (title) => {
     });
 };
 
-// Инициализация приложения
-const initializeApp = async () => {
+// Инициализация
+const initApp = async () => {
     try {
         await initUser();
         await loadData();
         updateDisplays();
-
-        document.querySelector('.coin-button')?.addEventListener('click', handleCoinClick);
         
+        // Инициализация монеты
+        coinButton = document.getElementById('coin-button');
+        coinButton?.addEventListener('click', onCoinClick);
+        
+        // Навигация
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.dataset.page === 'transfer' 
@@ -124,10 +97,11 @@ const initializeApp = async () => {
                     : showSimplePage(btn.textContent);
             });
         });
-
+        
     } catch (error) {
         console.error('Ошибка инициализации:', error);
     }
 };
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', initApp);
