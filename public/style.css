@@ -630,3 +630,20 @@ body {
 .coin-button:active {
     animation: shake 0.3s ease, pulse 0.3s ease;
 }
+  /* Анимация клика */
+.coin-clicked {
+    animation: coinClick 0.3s ease;
+}
+
+@keyframes coinClick {
+    0% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(0.95) rotate(-10deg); }
+    50% { transform: scale(0.97) rotate(10deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Оптимизация частиц */
+.particle {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
