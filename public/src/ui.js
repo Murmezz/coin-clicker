@@ -1,7 +1,5 @@
-
-import { coins, highscore, transferHistory } from './user.js';
-import { getCurrentUserData } from './user.js';
-import { makeTransfer } from './transfers.js';
+import { getCoins, getHighscore } from './user.js';
+import { makeTransfer, renderTransferHistory } from './transfers.js';
 
 export function getElement(id) {
     return document.getElementById(id);
@@ -10,8 +8,8 @@ export function getElement(id) {
 export function updateDisplays() {
     const coinsDisplay = getElement('coins');
     const highscoreDisplay = getElement('highscore');
-    if (coinsDisplay) coinsDisplay.textContent = coins;
-    if (highscoreDisplay) highscoreDisplay.textContent = highscore;
+    if (coinsDisplay) coinsDisplay.textContent = getCoins();
+    if (highscoreDisplay) highscoreDisplay.textContent = getHighscore();
 }
 
 export function showMessage(text, type) {
@@ -67,21 +65,4 @@ export function showTransferPage() {
             pagesContainer.style.display = 'none';
         });
     }
-}
-
-export function renderTransferHistory() {
-    const historyList = document.getElementById('history-list');
-    if (!historyList) return;
-    
-    historyList.innerHTML = transferHistory.length === 0 
-        ? '<p>Нет истории переводов</p>'
-        : transferHistory.slice(0, 10).map(tx => `
-            <div class="history-item ${tx.status}">
-                <div>
-                    <span class="history-username">${tx.to}</span>
-                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
-                </div>
-                <span class="history-amount">-${tx.amount}</span>
-            </div>
-        `).join('');
 }
