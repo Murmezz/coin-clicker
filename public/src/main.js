@@ -1,7 +1,7 @@
 import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
 import { showTransferPage, updateDisplays } from './ui.js';
 import { db } from './firebase.js';
-import { createDentEffect, createCoinEffect, tiltCoin } from './animations.js';
+import { createCoinEffect, tiltCoin } from './animations.js';
 
 // Инициализация элементов
 let coinButton = null;
