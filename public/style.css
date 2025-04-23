@@ -546,25 +546,3 @@ body {
     padding: 20px;
     font-size: 14px;
 }
-
-/* Анимации */
-.coin-button {
-    transition: transform 0.3s ease-out;
-    transform-style: preserve-3d;
-}
-
-.coin-effect {
-    position: fixed;
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    text-shadow: 0 0 5px rgba(0,0,0,0.8);
-    pointer-events: none;
-    z-index: 1000;
-    animation: flyToBalance 0.8s ease-out forwards;
-}
-
-@keyframes flyToBalance {
-    0% { transform: translate(0, 0); opacity: 1; }
-    100% { transform: translate(var(--target-x), var(--target-y)); opacity: 0; }
-}
