@@ -1,6 +1,5 @@
 import { db } from './firebase.js';
-import { coins, transferHistory, currentUsername, USER_ID } from './user.js';
-import { updateDisplays } from './ui.js';
+import { getCurrentUserData, updateUserData } from './user.js'; // Новый импорт
 
 export async function findUser(username) {
     if (!username.startsWith('@')) return null;
@@ -31,6 +30,8 @@ export async function findUser(username) {
 
 export async function makeTransfer(recipientUsername, amount) {
     try {
+        const { currentUsername, coins, USER_ID } = getCurrentUserData();
+        
         // Проверки
         if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
             return { success: false, message: 'Нельзя перевести себе' };
@@ -48,7 +49,7 @@ export async function makeTransfer(recipientUsername, amount) {
         // Подготовка транзакции
         const transaction = {
             date: new Date().toISOString(),
-            from: currentUsername, // Теперь currentUsername доступен
+            from: currentUsername,
             to: recipientUsername,
             amount: amount,
             status: 'completed'
@@ -57,16 +58,17 @@ export async function makeTransfer(recipientUsername, amount) {
         // Атомарное обновление
         const updates = {};
         updates[`users/${USER_ID}/balance`] = coins - amount;
-        updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
+        updates[`users/${USER_ID}/transfers`] = [...getCurrentUserData().transferHistory, transaction];
         updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
         updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
 
         await db.ref().update(updates);
 
         // Обновление локальных данных
-        coins -= amount;
-        transferHistory.push(transaction);
-        updateDisplays();
+        await updateUserData({
+            coins: coins - amount,
+            transferHistory: [...getCurrentUserData().transferHistory, transaction]
+        });
 
         return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
@@ -78,6 +80,8 @@ export async function makeTransfer(recipientUsername, amount) {
 export function renderTransferHistory() {
     const historyList = document.getElementById('history-list');
     if (!historyList) return;
+    
+    const { transferHistory } = getCurrentUserData();
     
     historyList.innerHTML = transferHistory.length === 0 
         ? '<p>Нет истории переводов</p>'
