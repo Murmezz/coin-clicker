@@ -15,16 +15,15 @@ const initElements = () => {
 };
 
 const handleCoinClick = async (event) => {
-    if (!coinButton) return;
-    
+    const coinButton = event.currentTarget;
     const rect = coinButton.getBoundingClientRect();
     const clickX = event.clientX - rect.left;
     const clickY = event.clientY - rect.top;
     
-    // Анимации
+    // Вызываем все анимации
     tiltCoin(coinButton, clickX, clickY);
-    createDentEffect(coinButton, clickX, clickY);
-    createCoinEffect(); // Без параметров - фиксированная позиция
+    createDentEffect(coinButton, clickX, clickY); // Теперь функция определена
+    createCoinEffect(event.clientX, event.clientY);
     
     // Обновление данных
     const newCoins = getCoins() + 1;
