@@ -546,4 +546,63 @@ body {
     padding: 20px;
     font-size: 14px;
 }
-  }
+
+/* Анимация монеты */
+.coin-button {
+    transition: transform 0.1s ease;
+}
+
+.coin-button:active {
+    transform: scale(0.95) rotate(10deg);
+    animation: pulse 0.3s ease;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Летящие +1 */
+.coin-effect {
+    position: absolute;
+    color: gold;
+    font-weight: bold;
+    font-size: 24px;
+    pointer-events: none;
+    user-select: none;
+    animation: float-up 1s ease-out forwards;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+@keyframes float-up {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100px) scale(1.5);
+    }
+}
+
+/* Эффект частиц */
+.particle {
+    position: absolute;
+    background: gold;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particle-fly 1s ease-out forwards;
+}
+
+@keyframes particle-fly {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0);
+    }
+}  
+  
