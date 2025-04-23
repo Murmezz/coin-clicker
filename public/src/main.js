@@ -49,7 +49,6 @@ const handleCoinClick = async (event) => {
         balance: newCoins,
         highscore: Math.max(getHighscore(), newCoins)
     });
-};
 
 const initEventListeners = () => {
     if (coinButton) {
