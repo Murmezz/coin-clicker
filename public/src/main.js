@@ -2,34 +2,53 @@ import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore 
 import { showTransferPage, updateDisplays } from './ui.js';
 import { db } from './firebase.js';
 
-// Анимационные функции
+// Добавьте в самое начало файла (после импортов):
+const effectsContainer = document.createElement('div');
+effectsContainer.className = 'effects-container';
+document.body.appendChild(effectsContainer);
+
+// Обновите функцию createCoinEffect:
 const createCoinEffect = (x, y) => {
     const effect = document.createElement('div');
     effect.className = 'coin-effect';
     effect.textContent = '+1';
     effect.style.left = `${x}px`;
     effect.style.top = `${y}px`;
-    document.body.appendChild(effect);
-    setTimeout(() => effect.remove(), 1000);
+    effectsContainer.appendChild(effect);
+    
+    setTimeout(() => {
+        effect.remove();
+    }, 1000);
 };
 
+// Обновите функцию createParticles:
 const createParticles = (x, y) => {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
         particle.style.left = `${x}px`;
         particle.style.top = `${y}px`;
-        particle.style.width = `${Math.random() * 10 + 5}px`;
-        particle.style.height = particle.style.width;
-        particle.style.opacity = Math.random() * 0.5 + 0.5;
         
+        // Разные размеры частиц
+        const size = Math.random() * 6 + 4;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        
+        // Разное время исчезновения
+        const duration = Math.random() * 0.5 + 0.5;
+        particle.style.animationDuration = `${duration}s`;
+        
+        // Разные направления
         const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * 100 + 50;
+        const distance = Math.random() * 60 + 40;
         particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
         particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
         
-        document.body.appendChild(particle);
-        setTimeout(() => particle.remove(), 1000);
+        effectsContainer.appendChild(particle);
+        
+        setTimeout(() => {
+            particle.remove();
+        }, duration * 1000);
     }
 };
 
