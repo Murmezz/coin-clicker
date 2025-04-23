@@ -560,17 +560,17 @@ body {
 
 .dent-effect {
     position: absolute;
-    width: 50px;
-    height: 50px;
-    background: rgba(255, 255, 255, 0.4);
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
     border-radius: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    animation: dent 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+    animation: dent 0.3s ease-out;
 }
 
 @keyframes dent {
     0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
-    100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
 }
 
 .plus-one-effect {
