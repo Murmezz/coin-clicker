@@ -5,83 +5,64 @@ import { db } from './firebase.js';
 // Глобальные элементы
 let coinButton = null;
 
-// ... (импорты остаются прежними)
-
-// Создание эффекта +1
-const createCoinEffect = (startX, startY) => {
-    const effect = document.createElement('div');
-    effect.className = 'coin-effect';
-    effect.textContent = '+1';
-    effect.style.left = `${startX}px`;
-    effect.style.top = `${startY}px`;
+const handleCoinClick = async (event) => {
+    const coin = event.currentTarget;
+    const effectsContainer = document.getElementById('effects-container');
+    const balanceDisplay = document.getElementById('coins');
     
-    // Вычисляем конечную позицию (баланс)
-    const balanceEl = document.getElementById('coins');
-    if (balanceEl) {
-        const balanceRect = balanceEl.getBoundingClientRect();
-        const targetX = balanceRect.left + balanceRect.width/2 - startX;
-        const targetY = balanceRect.top + balanceRect.height/2 - startY;
-        
-        effect.style.setProperty('--target-x', `${targetX}px`);
-        effect.style.setProperty('--target-y', `${targetY}px`);
-    }
+    // 1. Получаем координаты клика
+    const rect = coin.getBoundingClientRect();
+    const clickX = event.clientX;
+    const clickY = event.clientY;
+    const localX = event.clientX - rect.left;
+    const localY = event.clientY - rect.top;
     
-    document.body.appendChild(effect);
-    setTimeout(() => effect.remove(), 1000);
-};
-
-// Эффект продавливания
-const createDentEffect = (x, y, element) => {
-    const dent = document.createElement('div');
-    dent.className = 'dent-effect';
-    dent.style.left = `${x}px`;
-    dent.style.top = `${y}px`;
-    element.appendChild(dent);
-    setTimeout(() => dent.remove(), 400);
-};
-
-// Новая анимация наклона
-const tiltCoin = (element, clickX, clickY) => {
-    const rect = element.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    // 2. Анимация продавливания монеты
+    // Вычисляем угол наклона (до 10 градусов)
+    const tiltX = ((localX - rect.width/2) / (rect.width/2)) * 10;
+    const tiltY = ((localY - rect.height/2) / (rect.height/2)) * -10;
     
-    // Вычисляем направление наклона
-    const tiltX = (clickX - centerX) / 20;
-    const tiltY = (clickY - centerY) / 20;
-    
-    element.style.transform = `
+    coin.style.transform = `
         perspective(500px)
-        rotateX(${-tiltY}deg)
+        rotateX(${tiltY}deg)
         rotateY(${tiltX}deg)
         scale(0.95)
     `;
     
+    // 3. Эффект вмятины
+    const dent = document.createElement('div');
+    dent.className = 'dent';
+    dent.style.left = `${localX}px`;
+    dent.style.top = `${localY}px`;
+    coin.appendChild(dent);
+    
+    // 4. Эффект +1 (летит к балансу)
+    const plus = document.createElement('div');
+    plus.className = 'coin-plus';
+    plus.textContent = '+1';
+    plus.style.left = `${clickX}px`;
+    plus.style.top = `${clickY}px`;
+    
+    if (balanceDisplay) {
+        const balanceRect = balanceDisplay.getBoundingClientRect();
+        const targetX = balanceRect.left + balanceRect.width/2 - clickX;
+        const targetY = balanceRect.top + balanceRect.height/2 - clickY;
+        plus.style.setProperty('--target-x', `${targetX * 0.7}px`);
+        plus.style.setProperty('--target-y', `${targetY * 0.7}px`);
+    }
+    
+    effectsContainer.appendChild(plus);
+    
+    // 5. Возврат в исходное состояние
     setTimeout(() => {
-        element.style.transform = '';
+        coin.style.transform = '';
+        dent.remove();
+        plus.remove();
     }, 300);
-};
-
-// Обработчик клика
-const handleCoinClick = async (event) => {
-    const coinButton = event.currentTarget;
-    const rect = coinButton.getBoundingClientRect();
     
-    // Координаты клика относительно монеты
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
-    
-    // Анимации
-    tiltCoin(coinButton, clickX, clickY);
-    createDentEffect(clickX, clickY, coinButton);
-    createCoinEffect(event.clientX, event.clientY);
-    
-    // Обновление данных
+    // 6. Обновление данных
     const newCoins = getCoins() + 1;
-    updateUserState({ 
-        coins: newCoins,
-        highscore: Math.max(getHighscore(), newCoins)
-    });
+    updateUserState({ coins: newCoins });
     updateDisplays();
     
     try {
@@ -93,8 +74,6 @@ const handleCoinClick = async (event) => {
         console.error('Ошибка сохранения:', error);
     }
 };
-
-// ... (остальной код initApp остается без изменений)
 
 // Обработчик клика
 const onCoinClick = async (event) => {
