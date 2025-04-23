@@ -21,15 +21,10 @@ const handleCoinClick = async (event) => {
     const clickX = event.clientX - rect.left;
     const clickY = event.clientY - rect.top;
     
-    // Усиленные анимации
+    // Анимации
     tiltCoin(coinButton, clickX, clickY);
     createDentEffect(coinButton, clickX, clickY);
-    createCoinEffect(event.clientX, event.clientY);
-    
-    // Звук клика (опционально)
-    if (typeof Audio !== 'undefined') {
-        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-coin-win-notification-1992.mp3').play().catch(e => {});
-    }
+    createCoinEffect(); // Без параметров - фиксированная позиция
     
     // Обновление данных
     const newCoins = getCoins() + 1;
@@ -39,14 +34,10 @@ const handleCoinClick = async (event) => {
     });
     updateDisplays();
     
-    try {
-        await db.ref(`users/${getUserId()}`).update({ 
-            balance: newCoins,
-            highscore: Math.max(getHighscore(), newCoins)
-        });
-    } catch (error) {
-        console.error('Ошибка сохранения:', error);
-    }
+    await db.ref(`users/${getUserId()}`).update({ 
+        balance: newCoins,
+        highscore: Math.max(getHighscore(), newCoins)
+    });
 };
 
 const initEventListeners = () => {
