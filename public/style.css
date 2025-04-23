@@ -573,38 +573,28 @@ body {
     100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
 }
 
-/* Добавьте в style.css */
-.coin-effect {
+.plus-one-effect {
     position: fixed;
     color: white;
     font-size: 24px;
     font-weight: bold;
-    text-shadow: 0 2px 5px rgba(0,0,0,0.7);
-    animation: floatAppear 0.5s ease-out forwards;
-    right: 30px; /* Фиксированно справа */
-    opacity: 0;
+    text-shadow: 0 0 8px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 1000;
+    animation: flyToBalance 0.8s linear forwards;
+    opacity: 1;
 }
 
-@keyframes floatAppear {
-    0% { 
-        transform: translateY(10px); 
-        opacity: 0; 
-    }
-    50% { 
+@keyframes flyToBalance {
+    0% {
+        transform: translate(0, 0);
         opacity: 1;
-        text-shadow: 0 0 10px gold;
     }
-    100% { 
-        transform: translateY(-10px); 
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: translate(var(--target-x), var(--target-y));
         opacity: 0;
     }
-}
-
-.dent-effect {
-    /* ... предыдущие стили ... */
-    animation-duration: 0.3s; /* Быстрее */
-}
-
-.coin-button {
-    transition: transform 0.25s ease-out; /* Быстрее */
 }
