@@ -573,32 +573,38 @@ body {
     100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
 }
 
+/* Добавьте в style.css */
 .coin-effect {
-    position: absolute;
+    position: fixed;
     color: white;
-    font-size: 26px;
+    font-size: 24px;
     font-weight: bold;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
-    animation: floatPlus 0.8s cubic-bezier(0.39, 0.575, 0.565, 1) forwards;
-    opacity: 1;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.7);
+    animation: floatAppear 0.5s ease-out forwards;
+    right: 30px; /* Фиксированно справа */
+    opacity: 0;
 }
 
-@keyframes floatPlus {
+@keyframes floatAppear {
     0% { 
-        transform: translate(0, 0); 
-        opacity: 1; 
+        transform: translateY(10px); 
+        opacity: 0; 
     }
     50% { 
-        opacity: 0.9;
-        text-shadow: 0 0 15px gold;
+        opacity: 1;
+        text-shadow: 0 0 10px gold;
     }
     100% { 
-        transform: translate(var(--target-x), var(--target-y)) scale(1.5); 
+        transform: translateY(-10px); 
         opacity: 0;
     }
 }
 
+.dent-effect {
+    /* ... предыдущие стили ... */
+    animation-duration: 0.3s; /* Быстрее */
+}
+
 .coin-button {
-    transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    transform-style: preserve-3d;
+    transition: transform 0.25s ease-out; /* Быстрее */
 }
