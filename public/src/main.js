@@ -50,6 +50,77 @@ function showSimplePage(title) {
     }
 }
 
+// Добавим в функцию handleCoinClick:
+async function handleCoinClick(event) {
+    try {
+        // Анимация клика
+        const coin = event.currentTarget;
+        coin.style.transform = 'scale(0.95) rotate(10deg)';
+        setTimeout(() => {
+            coin.style.transform = '';
+        }, 100);
+
+        // Создаем эффект +1
+        createCoinEffect(event.clientX, event.clientY);
+        
+        // Создаем частицы
+        createParticles(event.clientX, event.clientY);
+
+        // Логика обновления коинов
+        const currentCoins = getCoins();
+        const newCoins = currentCoins + 1;
+        updateUserState({ coins: newCoins });
+        updateDisplays();
+        
+        await db.ref(`users/${getUserId()}`).update({ 
+            balance: newCoins,
+            highscore: Math.max(getHighscore(), newCoins)
+        });
+
+    } catch (error) {
+        console.error('Ошибка при клике:', error);
+    }
+}
+
+// Новая функция для эффекта +1
+function createCoinEffect(x, y) {
+    const effect = document.createElement('div');
+    effect.className = 'coin-effect';
+    effect.textContent = '+1';
+    effect.style.left = `${x}px`;
+    effect.style.top = `${y}px`;
+    document.body.appendChild(effect);
+    
+    setTimeout(() => {
+        effect.remove();
+    }, 1000);
+}
+
+// Новая функция для частиц
+function createParticles(x, y) {
+    for (let i = 0; i < 10; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.width = `${Math.random() * 10 + 5}px`;
+        particle.style.height = particle.style.width;
+        particle.style.opacity = Math.random() * 0.5 + 0.5;
+        
+        // Случайное направление
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 100 + 50;
+        particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+        particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+        
+        document.body.appendChild(particle);
+        
+        setTimeout(() => {
+            particle.remove();
+        }, 1000);
+    }
+}
+
 async function initializeApp() {
     try {
         await initUser();
