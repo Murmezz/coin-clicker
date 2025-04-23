@@ -574,17 +574,18 @@ body {
     }
 }
 
-/* Анимация продавливания */
+/* Анимация монеты */
 .coin-button {
-    transform-origin: center;
-    transition: transform 0.3s ease-out;
+    transition: all 0.3s ease-out;
+    transform-style: preserve-3d;
 }
 
-.dent-effect {
+/* Эффект вмятины */
+.dent {
     position: absolute;
     width: 40px;
     height: 40px;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     pointer-events: none;
     transform: translate(-50%, -50%) scale(0);
@@ -592,12 +593,24 @@ body {
 }
 
 @keyframes dent {
-    0% {
-        transform: translate(-50%, -50%) scale(0);
-        opacity: 0.8;
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(1.5);
-        opacity: 0;
-    }
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+/* Анимация +1 */
+.coin-plus {
+    position: absolute;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(0,0,0,0.8);
+    pointer-events: none;
+    animation: floatPlus 1s ease-out forwards;
+    opacity: 1;
+}
+
+@keyframes floatPlus {
+    0% { transform: translate(0, 0); opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { transform: translate(var(--target-x), var(--target-y)); opacity: 0; }
 }
