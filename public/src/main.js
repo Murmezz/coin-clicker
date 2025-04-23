@@ -4,17 +4,22 @@ import { db } from './firebase.js';
 
 async function handleCoinClick() {
     try {
-        coins++;
-        if (coins > highscore) highscore = coins;
-        updateDisplays();
+        // Создаем локальные копии, чтобы избежать мутации экспортируемых переменных
+        let newCoins = coins + 1;
+        let newHighscore = Math.max(highscore, newCoins);
+        
         await db.ref(`users/${USER_ID}`).update({ 
-            balance: coins, 
-            highscore 
+            balance: newCoins, 
+            highscore: newHighscore 
         });
+        
+        // Обновляем интерфейс после успешного сохранения
+        updateDisplays();
     } catch (error) {
         console.error('Ошибка при клике:', error);
     }
 }
+
 
 function showSimplePage(title) {
     const pagesContainer = document.getElementById('pages-container');
