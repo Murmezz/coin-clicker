@@ -547,29 +547,57 @@ body {
     font-size: 14px;
 }
 
-#coin-button {
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    transition: transform 0.2s ease;
+/* Эффект +1 */
+.coin-effect {
+    position: fixed;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+    pointer-events: none;
+    z-index: 1000;
+    animation: floatToBalance 1s ease-out forwards;
+    opacity: 1;
+}
+
+@keyframes floatToBalance {
+    0% {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+    70% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: translate(var(--target-x), var(--target-y));
+        opacity: 0;
+    }
+}
+
+/* Анимация продавливания */
+.coin-button {
+    transform-origin: center;
+    transition: transform 0.3s ease-out;
 }
 
 .dent-effect {
     position: absolute;
     width: 40px;
     height: 40px;
+    background: rgba(255,255,255,0.2);
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,215,0,0.4) 0%, rgba(255,215,0,0) 70%);
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 0;
     pointer-events: none;
-}
-
-.dent-effect.active {
-    animation: dent 0.6s ease-out;
+    transform: translate(-50%, -50%) scale(0);
+    animation: dent 0.4s ease-out;
 }
 
 @keyframes dent {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
-    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0;
+    }
 }
