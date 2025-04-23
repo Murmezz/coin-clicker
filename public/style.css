@@ -547,32 +547,13 @@ body {
     font-size: 14px;
 }
 
-/* Добавьте в style.css */
-#effects-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1000;
+/* Анимация монеты */
+.coin-button {
+    transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    transform-style: preserve-3d;
 }
 
-.dent-effect {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    pointer-events: none;
-    animation: dent 0.3s ease-out;
-}
-
-@keyframes dent {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
-    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-}
-
+/* Анимация +1 */
 .plus-one-effect {
     position: fixed;
     color: white;
@@ -581,7 +562,7 @@ body {
     text-shadow: 0 0 8px rgba(0,0,0,0.8);
     pointer-events: none;
     z-index: 1000;
-    animation: flyToBalance 0.8s linear forwards;
+    animation: flyToBalance 0.8s ease-out forwards;
     opacity: 1;
 }
 
@@ -590,30 +571,8 @@ body {
         transform: translate(0, 0);
         opacity: 1;
     }
-    50% {
-        opacity: 0.7;
-    }
-    100% {
-        transform: translate(var(--target-x), var(--target-y));
-        opacity: 0;
-    }
-  }
-  
-  .coin-effect {
-    position: fixed;
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    text-shadow: 0 0 5px rgba(0,0,0,0.8);
-    pointer-events: none;
-    z-index: 1000;
-    animation: flyToBalance 0.8s ease-out forwards;
-}
-
-@keyframes flyToBalance {
-    0% {
-        transform: translate(0, 0);
-        opacity: 1;
+    70% {
+        opacity: 0.5;
     }
     100% {
         transform: translate(var(--target-x), var(--target-y));
