@@ -547,35 +547,24 @@ body {
     font-size: 14px;
 }
 
-/* Анимация монеты */
+/* Анимации */
 .coin-button {
-    transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    transition: transform 0.3s ease-out;
     transform-style: preserve-3d;
 }
 
-/* Анимация +1 */
-.plus-one-effect {
+.coin-effect {
     position: fixed;
     color: white;
     font-size: 24px;
     font-weight: bold;
-    text-shadow: 0 0 8px rgba(0,0,0,0.8);
+    text-shadow: 0 0 5px rgba(0,0,0,0.8);
     pointer-events: none;
     z-index: 1000;
     animation: flyToBalance 0.8s ease-out forwards;
-    opacity: 1;
 }
 
 @keyframes flyToBalance {
-    0% {
-        transform: translate(0, 0);
-        opacity: 1;
-    }
-    70% {
-        opacity: 0.5;
-    }
-    100% {
-        transform: translate(var(--target-x), var(--target-y));
-        opacity: 0;
-    }
+    0% { transform: translate(0, 0); opacity: 1; }
+    100% { transform: translate(var(--target-x), var(--target-y)); opacity: 0; }
 }
