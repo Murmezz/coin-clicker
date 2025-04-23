@@ -1,25 +1,27 @@
-import { initUser, loadData, coins, highscore, USER_ID } from './user.js';
+import { initUser, loadData, updateUserState } from './user.js';
 import { showTransferPage, updateDisplays } from './ui.js';
 import { db } from './firebase.js';
 
 async function handleCoinClick() {
     try {
-        // Создаем локальные копии, чтобы избежать мутации экспортируемых переменных
-        let newCoins = coins + 1;
-        let newHighscore = Math.max(highscore, newCoins);
+        const newCoins = getCoins() + 1;
+        const newHighscore = Math.max(getHighscore(), newCoins);
         
-        await db.ref(`users/${USER_ID}`).update({ 
+        await db.ref(`users/${getUserId()}`).update({ 
             balance: newCoins, 
             highscore: newHighscore 
         });
         
-        // Обновляем интерфейс после успешного сохранения
+        updateUserState({
+            coins: newCoins,
+            highscore: newHighscore
+        });
+        
         updateDisplays();
     } catch (error) {
         console.error('Ошибка при клике:', error);
     }
 }
-
 
 function showSimplePage(title) {
     const pagesContainer = document.getElementById('pages-container');
@@ -52,17 +54,14 @@ async function initializeApp() {
         await loadData();
         updateDisplays();
 
-        // Обработчик клика по монете
         const coinButton = document.querySelector('.coin-button');
         if (coinButton) {
             coinButton.addEventListener('click', handleCoinClick);
         }
 
-        // Обработчики навигации
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.addEventListener('click', () => {
-                const page = btn.dataset.page;
-                if (page === 'transfer') {
+                if (btn.dataset.page === 'transfer') {
                     showTransferPage();
                 } else {
                     showSimplePage(btn.textContent);
