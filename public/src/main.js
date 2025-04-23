@@ -7,48 +7,50 @@ const effectsContainer = document.createElement('div');
 effectsContainer.className = 'effects-container';
 document.body.appendChild(effectsContainer);
 
-// Обновите функцию createCoinEffect:
-const createCoinEffect = (x, y) => {
-    const effect = document.createElement('div');
-    effect.className = 'coin-effect';
-    effect.textContent = '+1';
-    effect.style.left = `${x}px`;
-    effect.style.top = `${y}px`;
-    effectsContainer.appendChild(effect);
+// Добавим в начало файла:
+function createDentEffect(x, y, parent) {
+    const dent = document.createElement('div');
+    dent.className = 'dent-effect';
+    dent.style.left = `${x}px`;
+    dent.style.top = `${y}px`;
+    parent.appendChild(dent);
     
-    setTimeout(() => {
-        effect.remove();
-    }, 1000);
-};
+    // Активируем анимацию
+    setTimeout(() => dent.classList.add('active'), 10);
+    
+    // Удаляем после анимации
+    setTimeout(() => dent.remove(), 600);
+}
 
-// Обновите функцию createParticles:
-const createParticles = (x, y) => {
-    for (let i = 0; i < 12; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = `${x}px`;
-        particle.style.top = `${y}px`;
-        
-        // Разные размеры частиц
-        const size = Math.random() * 6 + 4;
-        particle.style.width = `${size}px`;
-        particle.style.height = `${size}px`;
-        
-        // Разное время исчезновения
-        const duration = Math.random() * 0.5 + 0.5;
-        particle.style.animationDuration = `${duration}s`;
-        
-        // Разные направления
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * 60 + 40;
-        particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
-        particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
-        
-        effectsContainer.appendChild(particle);
-        
-        setTimeout(() => {
-            particle.remove();
-        }, duration * 1000);
+// Обновленный handleCoinClick:
+const handleCoinClick = async (event) => {
+    const coinButton = event.currentTarget;
+    
+    // Эффект продавливания
+    coinButton.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        coinButton.style.transform = '';
+    }, 200);
+    
+    // Эффект вмятины
+    const rect = coinButton.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    createDentEffect(clickX, clickY, coinButton);
+    
+    // Логика клика
+    const currentCoins = getCoins();
+    const newCoins = currentCoins + 1;
+    updateUserState({ coins: newCoins });
+    updateDisplays();
+    
+    try {
+        await db.ref(`users/${getUserId()}`).update({ 
+            balance: newCoins,
+            highscore: Math.max(getHighscore(), newCoins)
+        });
+    } catch (error) {
+        console.error('Ошибка сохранения:', error);
     }
 };
 
