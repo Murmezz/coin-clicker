@@ -1,5 +1,5 @@
 import { db } from './firebase.js';
-import { coins, transferHistory, currentUsername } from './user.js'; // Добавили импорт currentUsername
+import { coins, transferHistory, currentUsername, USER_ID } from './user.js';
 import { updateDisplays } from './ui.js';
 
 export async function findUser(username) {
