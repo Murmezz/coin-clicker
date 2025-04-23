@@ -546,3 +546,42 @@ body {
     padding: 20px;
     font-size: 14px;
 }
+
+/* Стили для NVUTI */
+.nvuti-game {
+  text-align: center;
+  padding: 10px;
+  font-family: Arial, sans-serif;
+}
+
+.nvuti-game h3 {
+  color: #5a67d8;
+}
+
+.nvuti-game .settings {
+  background: #f3f4f6;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 10px 0;
+}
+
+.nvuti-game input[type="range"] {
+  width: 100%;
+  margin: 10px 0;
+}
+
+.nvuti-game button {
+  background: #5a67d8;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+.nvuti-game .bet-button {
+  background: #4caf50;
+  padding: 10px 20px;
+  font-weight: bold;
+}
