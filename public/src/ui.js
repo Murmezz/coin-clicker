@@ -1,5 +1,7 @@
+
 import { coins, highscore, transferHistory } from './user.js';
-import { makeTransfer } from './transfers.js'; // Добавленный импорт
+import { getCurrentUserData } from './user.js';
+import { makeTransfer } from './transfers.js';
 
 export function getElement(id) {
     return document.getElementById(id);
