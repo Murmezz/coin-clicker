@@ -1,14 +1,41 @@
 import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
 import { showTransferPage, updateDisplays } from './ui.js';
 import { db } from './firebase.js';
-
-// Глобальные элементы
-let coinButton = null;
+import { createDentEffect, createCoinEffect, tiltCoin } from './animations.js';
 
 const handleCoinClick = async (event) => {
-    const coin = event.currentTarget;
-    const effectsContainer = document.getElementById('effects-container');
-    const balanceDisplay = document.getElementById('coins');
+    const coinButton = event.currentTarget;
+    const rect = coinButton.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    
+    // Анимации
+    tiltCoin(coinButton, clickX, clickY);
+    createDentEffect(coinButton, clickX, clickY);
+    createCoinEffect(event.clientX, event.clientY);
+    
+    // Обновление данных
+    const newCoins = getCoins() + 1;
+    const newHighscore = Math.max(getHighscore(), newCoins);
+    
+    updateUserState({ 
+        coins: newCoins,
+        highscore: newHighscore
+    });
+    
+    updateDisplays();
+    
+    try {
+        await db.ref(`users/${getUserId()}`).update({ 
+            balance: newCoins,
+            highscore: newHighscore
+        });
+    } catch (error) {
+        console.error('Ошибка сохранения:', error);
+    }
+};
+
+// ... остальной код main.js без изменений
 
 // Обработчик клика
 const onCoinClick = async (event) => {
@@ -18,15 +45,6 @@ const onCoinClick = async (event) => {
     const rect = coinButton.getBoundingClientRect();
     const clickX = event.clientX - rect.left;
     const clickY = event.clientY - rect.top;
-    
-    // Анимации
-    coinButton.style.transform = 'scale(0.95)';
-    createDentEffect(clickX, clickY, coinButton);
-    
-    // Возврат к исходному состоянию
-    setTimeout(() => {
-        coinButton.style.transform = '';
-    }, 200);
     
     // Обновление данных
     const newCoins = getCoins() + 1;
