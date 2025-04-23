@@ -1,4 +1,5 @@
 import { coins, highscore, transferHistory } from './user.js';
+import { makeTransfer } from './transfers.js'; // Добавленный импорт
 
 export function getElement(id) {
     return document.getElementById(id);
@@ -20,19 +21,23 @@ export function showMessage(text, type) {
 
 export function showTransferPage() {
     const pagesContainer = getElement('pages-container');
-    const transferPage = getElement('transfer-page');
+    const transferPageTemplate = getElement('transfer-page-template');
     
-    if (!pagesContainer || !transferPage) return;
+    if (!pagesContainer || !transferPageTemplate) return;
+    
+    const transferPage = transferPageTemplate.cloneNode(true);
+    transferPage.id = 'active-transfer-page';
+    transferPage.style.display = 'block';
     
     pagesContainer.innerHTML = '';
-    pagesContainer.appendChild(transferPage.cloneNode(true));
+    pagesContainer.appendChild(transferPage);
     pagesContainer.style.display = 'block';
+    
     renderTransferHistory();
 
-    // Обработчики для формы перевода
-    const sendButton = pagesContainer.querySelector('#send-coins');
-    const usernameInput = pagesContainer.querySelector('#username');
-    const amountInput = pagesContainer.querySelector('#amount');
+    const sendButton = transferPage.querySelector('#send-coins');
+    const usernameInput = transferPage.querySelector('#username');
+    const amountInput = transferPage.querySelector('#amount');
     
     if (sendButton && usernameInput && amountInput) {
         sendButton.addEventListener('click', async () => {
@@ -54,8 +59,7 @@ export function showTransferPage() {
         });
     }
 
-    // Кнопка "Назад"
-    const backButton = pagesContainer.querySelector('.back-button');
+    const backButton = transferPage.querySelector('.back-button');
     if (backButton) {
         backButton.addEventListener('click', () => {
             pagesContainer.style.display = 'none';
@@ -64,7 +68,7 @@ export function showTransferPage() {
 }
 
 export function renderTransferHistory() {
-    const historyList = getElement('history-list');
+    const historyList = document.getElementById('history-list');
     if (!historyList) return;
     
     historyList.innerHTML = transferHistory.length === 0 
