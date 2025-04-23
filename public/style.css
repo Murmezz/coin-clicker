@@ -547,55 +547,53 @@ body {
     font-size: 14px;
 }
 
-/* Анимация монеты */
-.coin-button {
-    transition: transform 0.1s ease;
+/* Контейнер для эффектов (новый) */
+.effects-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
 }
 
-.coin-button:active {
-    transform: scale(0.95) rotate(10deg);
-    animation: pulse 0.3s ease;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-/* Летящие +1 */
+/* Анимация +1 */
 .coin-effect {
     position: absolute;
-    color: gold;
-    font-weight: bold;
+    color: #FFD700;
     font-size: 24px;
-    pointer-events: none;
-    user-select: none;
-    animation: float-up 1s ease-out forwards;
-    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+    animation: floatEffect 1s ease-out forwards;
+    opacity: 0;
+    transform: translateY(0);
 }
 
-@keyframes float-up {
+@keyframes floatEffect {
     0% {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
     100% {
         opacity: 0;
-        transform: translateY(-100px) scale(1.5);
+        transform: translateY(-80px) scale(1.3);
     }
 }
 
-/* Эффект частиц */
+/* Анимация частиц */
 .particle {
     position: absolute;
-    background: gold;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, #FFD700 0%, #FFA500 100%);
     border-radius: 50%;
-    pointer-events: none;
-    animation: particle-fly 1s ease-out forwards;
+    animation: particleEffect 1s ease-out forwards;
+    opacity: 0;
 }
 
-@keyframes particle-fly {
+@keyframes particleEffect {
     0% {
         opacity: 1;
         transform: translate(0, 0) scale(1);
@@ -604,46 +602,4 @@ body {
         opacity: 0;
         transform: translate(var(--tx), var(--ty)) scale(0);
     }
-}  
-  
-/* 3D-эффект при наведении */
-.coin-container {
-    perspective: 1000px;
-}
-
-.coin-button {
-    transform-style: preserve-3d;
-    transition: all 0.3s ease;
-}
-
-.coin-button:hover {
-    transform: rotateY(20deg) scale(1.05);
-}
-
-/* Анимация "дрожания" */
-@keyframes shake {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-5deg); }
-    75% { transform: rotate(5deg); }
-}
-
-.coin-button:active {
-    animation: shake 0.3s ease, pulse 0.3s ease;
-}
-  /* Анимация клика */
-.coin-clicked {
-    animation: coinClick 0.3s ease;
-}
-
-@keyframes coinClick {
-    0% { transform: scale(1) rotate(0deg); }
-    25% { transform: scale(0.95) rotate(-10deg); }
-    50% { transform: scale(0.97) rotate(10deg); }
-    100% { transform: scale(1) rotate(0deg); }
-}
-
-/* Оптимизация частиц */
-.particle {
-    will-change: transform, opacity;
-    backface-visibility: hidden;
 }
