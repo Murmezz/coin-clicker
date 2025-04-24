@@ -1,42 +1,35 @@
-document.addEventListener('DOMContentLoaded', async function() {
-    // 1. Инициализация пользователя
+document.addEventListener('DOMContentLoaded', async () => {
+    // Инициализация пользователя
     await window.userModule.initUser();
     
-    // 2. Находим все элементы
-    const coinButton = document.querySelector('.coin-button');
-    const pagesContainer = document.getElementById('pages-container');
-    const navButtons = document.querySelectorAll('.nav-button');
+    // Обновляем отображение баланса
+    document.getElementById('coins').textContent = window.userModule.getCoins();
+    document.getElementById('highscore').textContent = window.userModule.getHighscore();
     
-    // 3. Проверяем существование элементов
-    if (!coinButton || !pagesContainer || navButtons.length === 0) {
-        console.error("Критические элементы не найдены!");
-        return;
-    }
-    
-    // 4. Вешаем обработчики
-    coinButton.addEventListener('click', function() {
-        const newCoins = window.userModule.getCoins() + 1;
-        window.userModule.updateUserState({
-            coins: newCoins,
-            highscore: Math.max(window.userModule.getHighscore(), newCoins)
+    // Обработчик клика по монете
+    document.querySelector('.coin-button').addEventListener('click', () => {
+        const newCoins = window.userModule.coins + 1;
+        window.userModule.coins = newCoins;
+        window.userModule.highscore = Math.max(window.userModule.highscore, newCoins);
+        
+        // Сохраняем и обновляем
+        firebase.database().ref(`users/${window.userModule.USER_ID}`).update({
+            balance: newCoins,
+            highscore: window.userModule.highscore
         });
-        window.uiModule.updateDisplays();
+        
+        document.getElementById('coins').textContent = newCoins;
+        document.getElementById('highscore').textContent = window.userModule.highscore;
     });
     
-    navButtons.forEach(btn => {
+    // Обработчики кнопок
+    document.querySelectorAll('.nav-button').forEach(btn => {
         btn.addEventListener('click', function() {
-            const page = this.dataset.page;
-            switch(page) {
-                case 'transfer':
-                    window.uiModule.showTransferPage();
-                    break;
-                default:
-                    window.uiModule.showSimplePage(this.textContent);
+            if (this.dataset.page === 'transfer') {
+                window.uiModule.showTransferPage();
+            } else {
+                alert(`${this.textContent} - раздел в разработке`);
             }
         });
     });
-    
-    // 5. Первичное обновление интерфейса
-    window.uiModule.updateDisplays();
-    console.log("Приложение инициализировано");
 });
