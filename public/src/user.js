@@ -1,6 +1,5 @@
 import { auth, db } from './firebase.js';
 
-// Приватные переменные состояния
 let state = {
     USER_ID: '',
     currentUsername: '',
@@ -9,28 +8,31 @@ let state = {
     transferHistory: []
 };
 
-// Геттеры для получения данных
 export const getUserId = () => state.USER_ID;
 export const getUsername = () => state.currentUsername;
 export const getCoins = () => state.coins;
 export const getHighscore = () => state.highscore;
 export const getTransferHistory = () => [...state.transferHistory];
 
-// Сеттеры для обновления данных
+export const updateUserState = (newState) => {
+    state = { ...state, ...newState };
+};
+
 export async function initUser() {
     try {
         const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
         if (!tgUser) throw new Error("No Telegram user");
 
-        // Генерируем уникальный ID на основе Telegram ID
-        state.USER_ID = `tg_${tgUser.id}`; 
+        // Жёсткая привязка к Telegram ID
+        state.USER_ID = `tg_${tgUser.id}`;
         state.currentUsername = tgUser.username 
             ? `@${tgUser.username.toLowerCase()}` 
             : `@user${tgUser.id.toString().slice(-4)}`;
 
-        // Создаём/обновляем запись в Firebase
+        // Создаём/обновляем запись
         await db.ref(`users/${state.USER_ID}`).update({
             username: state.currentUsername,
+            telegramId: tgUser.id, // Добавляем ID для миграции
             balance: firebase.database.ServerValue.increment(0),
             highscore: firebase.database.ServerValue.increment(0),
             lastLogin: new Date().toISOString()
@@ -38,7 +40,7 @@ export async function initUser() {
 
     } catch (error) {
         console.error('Ошибка инициализации:', error);
-        // Fallback для тестирования вне Telegram
+        // Fallback для тестирования
         state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
         state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
     }
