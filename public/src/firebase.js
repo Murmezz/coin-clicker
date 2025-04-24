@@ -9,11 +9,10 @@ const firebaseConfig = {
     appId: "1:1024804439259:web:351a470a824712c494f8fe"
 };
 
-// Инициализируем Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
+// Инициализируем только если еще не инициализировано
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
-// Экспортируем нужные модули
-window.db = db;
-window.auth = auth;
+// Делаем доступным глобально
+window.firebase = firebase;
