@@ -1,68 +1,25 @@
-// Убираем дублирующееся объявление auth
-const userState = {
+// user.js
+let state = {
     USER_ID: '',
-    currentUsername: '',
-    coins: 100,
-    highscore: 0,
-    transferHistory: []
+    coins: 0,
+    // ... остальные поля
 };
 
-async function initUser() {
+async function saveToDatabase() {
     try {
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        const userId = tgUser ? `tg_${tgUser.id}` : `local_${Date.now()}`;
-        const username = tgUser?.username ? `@${tgUser.username}` : `@user_${userId.slice(-4)}`;
-
-        // Создаем/обновляем запись пользователя
-        const userRef = firebase.database().ref(`users/${userId}`);
-        const snapshot = await userRef.once('value');
-        
-        if (!snapshot.exists()) {
-            await userRef.set({
-                username: username,
-                balance: 100,
-                highscore: 0,
-                telegramId: tgUser?.id || null,
-                createdAt: firebase.database.ServerValue.TIMESTAMP
-            });
-        }
-
-        // Обновляем состояние
-        userState.USER_ID = userId;
-        userState.currentUsername = username;
-        await loadData();
-
+        await firebase.database().ref(`users/${state.USER_ID}`).update({
+            balance: state.coins,
+            highscore: state.highscore,
+            lastUpdate: firebase.database.ServerValue.TIMESTAMP
+        });
+        console.log("Данные сохранены в Firebase");
     } catch (error) {
-        console.error("Init error:", error);
-        // Fallback
-        userState.USER_ID = `local_${Date.now()}`;
-        userState.currentUsername = "@guest";
-        userState.coins = 100;
+        console.error("Ошибка сохранения:", error);
     }
 }
 
-async function loadData() {
-    if (!userState.USER_ID) return;
-    
-    return new Promise((resolve) => {
-        firebase.database().ref(`users/${userState.USER_ID}`).on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            userState.coins = data.balance || 100;
-            userState.highscore = data.highscore || 0;
-            userState.transferHistory = data.transfers || [];
-            resolve();
-        });
-    });
+function updateUserState(newState) {
+    state = { ...state, ...newState };
+    saveToDatabase(); // Автосохранение при любом изменении
+    window.uiModule.updateDisplays();
 }
-
-// Экспортируем объект с методами
-window.userModule = {
-    getUserId: () => userState.USER_ID,
-    getUsername: () => userState.currentUsername,
-    getCoins: () => userState.coins,
-    getHighscore: () => userState.highscore,
-    getTransferHistory: () => [...userState.transferHistory],
-    updateUserState: (newState) => Object.assign(userState, newState),
-    initUser,
-    loadData
-};
