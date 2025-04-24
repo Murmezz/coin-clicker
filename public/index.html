@@ -6,16 +6,24 @@
     <title>Coin Clicker</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Добавляем Firebase через CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="balance">Баланс: <span id="coins">0</span></div>
         
         <div class="buttons-container">
-            <div class="button-row">
+            <div class="button-row first-row">
                 <button class="nav-button" data-page="top">Топ</button>
                 <button class="nav-button" data-page="shop">Магазин</button>
-                <button class="nav-button" data-page="transfer">Перевод</button>
+                <button class="nav-button" data-page="games">Игры</button>
+            </div>
+            <div class="button-row second-row">
+                <button class="nav-button wide-button" data-page="transfer">Перевести</button>
+                <button class="nav-button wide-button" data-page="referrals">Рефералы</button>
             </div>
         </div>
 
@@ -26,12 +34,15 @@
         <div class="stats">
             <div>🔝 Рекорд: <span id="highscore">0</span></div>
         </div>
+
+        <div id="pages-container" style="display: none;"></div>
     </div>
 
-    <script type="module" src="src/firebase.js"></script>
-    <script type="module" src="src/user.js"></script>
-    <script type="module" src="src/transfers.js"></script>
-    <script type="module" src="src/ui.js"></script>
-    <script type="module" src="src/main.js"></script>
+    <!-- Подключаем скрипты -->
+    <script src="src/firebase.js"></script>
+    <script src="src/user.js"></script>
+    <script src="src/transfers.js"></script>
+    <script src="src/ui.js"></script>
+    <script src="src/main.js"></script>
 </body>
 </html>
