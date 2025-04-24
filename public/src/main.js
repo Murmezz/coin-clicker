@@ -1,31 +1,45 @@
-import { initUser, loadData, getCoins, updateUserState } from './user.js';
-import { updateDisplays } from './ui.js';
-
-let localCoins = 0;
-
-async function handleCoinClick() {
-    localCoins++;
-    updateUserState({ coins: localCoins });
-    updateDisplays();
-    
-    document.querySelector('.coin-button').style.transform = 'scale(0.9)';
-    setTimeout(() => {
-        document.querySelector('.coin-button').style.transform = 'scale(1)';
-    }, 100);
-}
-
+// Инициализация приложения
 async function initializeApp() {
-    await initUser();
-    localCoins = getCoins();
-    updateDisplays();
-    
-    document.querySelector('.coin-button').addEventListener('click', handleCoinClick);
-    
-    setInterval(async () => {
-        await db.ref(`users/${getUserId()}`).update({
-            balance: localCoins
+    try {
+        await user.initUser();
+        await user.loadData();
+        
+        // Обработчики событий
+        document.querySelector('.coin-button').addEventListener('click', handleCoinClick);
+        
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.page === 'transfer') {
+                    ui.showTransferPage();
+                } else {
+                    ui.showSimplePage(btn.textContent);
+                }
+            });
         });
-    }, 5000);
+        
+        ui.updateDisplays();
+    } catch (error) {
+        console.error("Initialize error:", error);
+    }
 }
 
+// Обработчик клика по монете
+function handleCoinClick() {
+    const newCoins = user.getCoins() + 1;
+    const newHighscore = Math.max(user.getHighscore(), newCoins);
+    
+    user.updateUserState({
+        coins: newCoins,
+        highscore: newHighscore
+    });
+    
+    ui.updateDisplays();
+    
+    // Анимация
+    const coin = document.querySelector('.coin-button');
+    coin.style.transform = 'scale(0.9)';
+    setTimeout(() => coin.style.transform = 'scale(1)', 100);
+}
+
+// Запуск приложения
 document.addEventListener('DOMContentLoaded', initializeApp);
