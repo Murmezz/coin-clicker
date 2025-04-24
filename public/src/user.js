@@ -1,33 +1,35 @@
-import { auth, db } from './firebase.js';
-
+// Состояние пользователя
 let state = {
     USER_ID: '',
     currentUsername: '',
-    coins: 100,
+    coins: 0,
     highscore: 0,
     transferHistory: []
 };
 
-export const getUserId = () => state.USER_ID;
-export const getUsername = () => state.currentUsername;
-export const getCoins = () => state.coins;
-export const getHighscore = () => state.highscore;
-export const getTransferHistory = () => [...state.transferHistory];
+// Геттеры
+function getUserId() { return state.USER_ID; }
+function getUsername() { return state.currentUsername; }
+function getCoins() { return state.coins; }
+function getHighscore() { return state.highscore; }
+function getTransferHistory() { return [...state.transferHistory]; }
 
-export const updateUserState = (newState) => {
+// Обновление состояния
+function updateUserState(newState) {
     state = { ...state, ...newState };
     console.log("State updated:", state);
-};
+}
 
-export async function initUser() {
+// Инициализация пользователя
+async function initUser() {
     try {
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
         state.USER_ID = tgUser ? `tg_${tgUser.id}` : `anon_${Date.now()}`;
-        state.currentUsername = tgUser?.username ? `@${tgUser.username}` : `@user${state.USER_ID.slice(-4)}`;
+        state.currentUsername = tgUser?.username ? `@${tgUser.username}` : `@user_${state.USER_ID.slice(-4)}`;
 
         await db.ref(`users/${state.USER_ID}`).update({
             username: state.currentUsername,
-            balance: 100,
+            balance: 100, // Стартовый баланс
             highscore: 0,
             lastLogin: firebase.database.ServerValue.TIMESTAMP
         });
@@ -39,7 +41,8 @@ export async function initUser() {
     }
 }
 
-export async function loadData() {
+// Загрузка данных
+async function loadData() {
     return new Promise((resolve) => {
         db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
             const data = snapshot.val() || {};
@@ -52,3 +55,15 @@ export async function loadData() {
         });
     });
 }
+
+// Экспортируем функции
+window.user = {
+    getUserId,
+    getUsername,
+    getCoins,
+    getHighscore,
+    getTransferHistory,
+    updateUserState,
+    initUser,
+    loadData
+};
