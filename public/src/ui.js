@@ -1,7 +1,7 @@
-const ui = {
+window.uiModule = {
     updateDisplays: function() {
-        document.getElementById('coins').textContent = user.getCoins();
-        document.getElementById('highscore').textContent = user.getHighscore();
+        document.getElementById('coins').textContent = window.userModule.getCoins();
+        document.getElementById('highscore').textContent = window.userModule.getHighscore();
     },
 
     showTransferPage: function() {
@@ -13,10 +13,10 @@ const ui = {
         pagesContainer.innerHTML = transferPageTemplate.innerHTML;
         pagesContainer.style.display = 'block';
         
-        transfers.renderTransferHistory();
+        window.transfersModule.renderTransferHistory();
         
         document.getElementById('send-coins').addEventListener('click', async () => {
-            const result = await transfers.makeTransfer(
+            const result = await window.transfersModule.makeTransfer(
                 document.getElementById('username').value,
                 parseInt(document.getElementById('amount').value)
             );
@@ -46,5 +46,3 @@ const ui = {
         });
     }
 };
-
-window.ui = ui;
