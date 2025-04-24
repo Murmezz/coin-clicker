@@ -67,58 +67,55 @@ window.userModule = (function() {
         getTransferHistory: () => [...state.transferHistory],
 
         makeTransfer: async function(username, amount) {
-            try {
-                // 1. Проверяем аутентификацию
-                if (!firebase.auth().currentUser) {
-                    await firebase.auth().signInAnonymously();
-                }
-
-                // 2. Поиск получателя с проверкой прав
-                const snapshot = await firebase.database()
-                    .ref('users')
-                    .orderByChild('username')
-                    .equalTo(username.toLowerCase())
-                    .once('value');
-
-                if (!snapshot.exists()) {
-                    return { success: false, message: 'Пользователь не найден' };
-                }
-
-                // 3. Получаем данные получателя
-                const [recipientId, recipientData] = Object.entries(snapshot.val())[0];
-                
-                // 4. Подготовка обновлений
-                const updates = {};
-                updates[`users/${state.USER_ID}/balance`] = state.coins - amount;
-                updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
-                updates[`users/${state.USER_ID}/transfers`] = [
-                    ...state.transferHistory,
-                    {
-                        amount: amount,
-                        date: new Date().toISOString(),
-                        from: state.currentUsername,
-                        to: username
-                    }
-                ];
-
-                // 5. Выполнение транзакции
-                await firebase.database().ref().update(updates);
-                
-                // 6. Обновление состояния
-                this.updateUserState({
-                    coins: state.coins - amount,
-                    transferHistory: updates[`users/${state.USER_ID}/transfers`]
-                });
-
-                return { success: true, message: `Перевод ${amount} коинов успешен!` };
-
-            } catch (error) {
-                console.error("Ошибка перевода:", error);
-                return { 
-                    success: false, 
-                    message: 'Ошибка перевода: ' + error.message 
-                };
-            }
+    try {
+        // 1. Проверяем аутентификацию
+        if (!firebase.auth().currentUser) {
+            await firebase.auth().signInAnonymously();
         }
-    };
-})();
+
+        // 2. Поиск получателя
+        const snapshot = await firebase.database()
+            .ref('users')
+            .orderByChild('username')
+            .equalTo(username.toLowerCase())
+            .once('value');
+
+        if (!snapshot.exists()) {
+            return { success: false, message: 'Пользователь не найден' };
+        }
+
+        // 3. Подготовка данных перевода
+        const [recipientId, recipientData] = Object.entries(snapshot.val())[0];
+        const transferId = firebase.database().ref().push().key;
+        const transferData = {
+            amount: amount,
+            date: new Date().toISOString(),
+            from: this.getUsername(),
+            to: username
+        };
+
+        // 4. Формируем обновления
+        const updates = {};
+        updates[`users/${this.getUserId()}/balance`] = this.getCoins() - amount;
+        updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
+        updates[`users/${this.getUserId()}/transfers/${transferId}`] = transferData;
+        updates[`users/${recipientId}/transfers/${transferId}`] = transferData;
+
+        // 5. Выполняем запрос
+        await firebase.database().ref().update(updates);
+        
+        // 6. Обновляем локальное состояние
+        this.updateUserState({
+            coins: this.getCoins() - amount,
+            transferHistory: {
+                ...this.getTransferHistory(),
+                [transferId]: transferData
+            }
+        });
+
+        return { success: true, message: `Переведено ${amount} коинов` };
+    } catch (error) {
+        console.error("Ошибка перевода:", error);
+        return { success: false, message: 'Ошибка при переводе' };
+    }
+}
