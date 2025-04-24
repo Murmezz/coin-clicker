@@ -1,6 +1,39 @@
 import { db } from './firebase.js';
 import { getUserId, getUsername, getCoins, getTransferHistory, updateUserState } from './user.js';
 
+// Добавьте этот экспорт
+export function renderTransferHistory() {
+    const historyList = document.getElementById('history-list');
+    if (!historyList) return;
+    
+    const transferHistory = getTransferHistory();
+    
+    historyList.innerHTML = transferHistory.length === 0 
+        ? '<p class="empty-history">Нет истории переводов</p>'
+        : transferHistory.slice(0, 10).map(tx => `
+            <div class="history-item ${tx.from === getUsername() ? 'outgoing' : 'incoming'}">
+                <div class="history-info">
+                    <span class="history-direction-icon">
+                        ${tx.from === getUsername() ? '➡️' : '⬅️'}
+                    </span>
+                    <div>
+                        <span class="history-username">
+                            ${tx.from === getUsername() ? tx.to : tx.from}
+                        </span>
+                        <span class="history-date">
+                            ${new Date(tx.date).toLocaleString()}
+                        </span>
+                    </div>
+                </div>
+                <span class="history-amount ${tx.from === getUsername() ? 'outgoing' : 'incoming'}">
+                    ${tx.from === getUsername() ? '-' : '+'}${tx.amount}
+                </span>
+            </div>
+        `).join('');
+}
+
+// Остальные функции (findUser, makeTransfer) остаются без изменений
+
 export async function findUser(username) {
     if (!username.startsWith('@')) return null;
     
