@@ -1,25 +1,50 @@
-import { getCoins, getHighscore } from './user.js';
-import { makeTransfer, renderTransferHistory } from './transfers.js';
+const ui = {
+    updateDisplays: function() {
+        document.getElementById('coins').textContent = user.getCoins();
+        document.getElementById('highscore').textContent = user.getHighscore();
+    },
 
-export function updateDisplays() {
-    document.getElementById('coins').textContent = getCoins();
-    document.getElementById('highscore').textContent = getHighscore();
-}
-
-export function showTransferPage() {
-    const pagesContainer = document.getElementById('pages-container');
-    pagesContainer.innerHTML = document.getElementById('transfer-page-template').innerHTML;
-    pagesContainer.style.display = 'block';
-    
-    renderTransferHistory();
-    
-    document.getElementById('send-coins').addEventListener('click', async () => {
-        const result = await makeTransfer(
-            document.getElementById('username').value,
-            parseInt(document.getElementById('amount').value)
-        );
+    showTransferPage: function() {
+        const pagesContainer = document.getElementById('pages-container');
+        const transferPageTemplate = document.getElementById('transfer-page-template');
         
-        alert(result.message);
-        if (result.success) updateDisplays();
-    });
-}
+        if (!pagesContainer || !transferPageTemplate) return;
+        
+        pagesContainer.innerHTML = transferPageTemplate.innerHTML;
+        pagesContainer.style.display = 'block';
+        
+        transfers.renderTransferHistory();
+        
+        document.getElementById('send-coins').addEventListener('click', async () => {
+            const result = await transfers.makeTransfer(
+                document.getElementById('username').value,
+                parseInt(document.getElementById('amount').value)
+            );
+            
+            alert(result.message);
+            if (result.success) this.updateDisplays();
+        });
+    },
+
+    showSimplePage: function(title) {
+        const pagesContainer = document.getElementById('pages-container');
+        pagesContainer.innerHTML = `
+            <div class="page">
+                <div class="page-header">
+                    <button class="back-button">←</button>
+                    <h2 class="page-title">${title}</h2>
+                </div>
+                <div class="page-content">
+                    <p>Раздел "${title}" в разработке</p>
+                </div>
+            </div>
+        `;
+        pagesContainer.style.display = 'block';
+        
+        document.querySelector('.back-button').addEventListener('click', () => {
+            pagesContainer.style.display = 'none';
+        });
+    }
+};
+
+window.ui = ui;
