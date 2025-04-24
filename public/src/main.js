@@ -1,44 +1,34 @@
-// Инициализация приложения
 async function initializeApp() {
     try {
-        await user.initUser();
-        await user.loadData();
+        // Используем window.userModule вместо user
+        await window.userModule.initUser();
+        console.log("User initialized:", window.userModule.getUserId());
         
         // Обработчики событий
-        document.querySelector('.coin-button').addEventListener('click', handleCoinClick);
+        document.querySelector('.coin-button')?.addEventListener('click', () => {
+            const newCoins = window.userModule.getCoins() + 1;
+            window.userModule.updateUserState({
+                coins: newCoins,
+                highscore: Math.max(window.userModule.getHighscore(), newCoins)
+            });
+            window.uiModule.updateDisplays();
+        });
         
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (btn.dataset.page === 'transfer') {
-                    ui.showTransferPage();
+                    window.uiModule.showTransferPage();
                 } else {
-                    ui.showSimplePage(btn.textContent);
+                    window.uiModule.showSimplePage(btn.textContent);
                 }
             });
         });
         
-        ui.updateDisplays();
+        window.uiModule.updateDisplays();
+        
     } catch (error) {
         console.error("Initialize error:", error);
     }
-}
-
-// Обработчик клика по монете
-function handleCoinClick() {
-    const newCoins = user.getCoins() + 1;
-    const newHighscore = Math.max(user.getHighscore(), newCoins);
-    
-    user.updateUserState({
-        coins: newCoins,
-        highscore: newHighscore
-    });
-    
-    ui.updateDisplays();
-    
-    // Анимация
-    const coin = document.querySelector('.coin-button');
-    coin.style.transform = 'scale(0.9)';
-    setTimeout(() => coin.style.transform = 'scale(1)', 100);
 }
 
 // Запуск приложения
