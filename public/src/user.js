@@ -16,47 +16,58 @@ export const getTransferHistory = () => [...state.transferHistory];
 
 export const updateUserState = (newState) => {
     state = { ...state, ...newState };
+    console.log("State updated:", state); // Добавьте для отладки
 };
 
 export async function initUser() {
     try {
-        const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
-        if (!tgUser) throw new Error("No Telegram user");
-
-        // Жёсткая привязка к Telegram ID
-        state.USER_ID = `tg_${tgUser.id}`;
-        state.currentUsername = tgUser.username 
+        // 1. Проверяем Telegram WebApp
+        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        const tgUserId = tgUser?.id.toString();
+        
+        // 2. Создаём ID (используем Telegram ID или генерируем)
+        state.USER_ID = tgUserId ? `tg_${tgUserId}` : `anon_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // 3. Устанавливаем username
+        state.currentUsername = tgUser?.username 
             ? `@${tgUser.username.toLowerCase()}` 
-            : `@user${tgUser.id.toString().slice(-4)}`;
-
-        // Создаём/обновляем запись
-        await db.ref(`users/${state.USER_ID}`).update({
-            username: state.currentUsername,
-            telegramId: tgUser.id, // Добавляем ID для миграции
-            balance: firebase.database.ServerValue.increment(0),
-            highscore: firebase.database.ServerValue.increment(0),
-            lastLogin: new Date().toISOString()
-        });
-
+            : `@user_${state.USER_ID.slice(-4)}`;
+        
+        // 4. Загружаем или создаём запись
+        const userRef = db.ref(`users/${state.USER_ID}`);
+        const snapshot = await userRef.once('value');
+        
+        if (!snapshot.exists()) {
+            await userRef.set({
+                username: state.currentUsername,
+                balance: 100, // Стартовый баланс
+                highscore: 0,
+                telegramId: tgUserId || null,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+        
+        // 5. Загружаем данные
+        await loadData();
+        
     } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        // Fallback для тестирования
-        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
-        state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
+        console.error("initUser error:", error);
+        // Fallback
+        state.USER_ID = `local_${Date.now()}`;
+        state.currentUsername = "@guest";
+        state.coins = 100;
     }
 }
 
 export async function loadData() {
     return new Promise((resolve) => {
         db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                updateUserState({
-                    coins: data.balance || 0,
-                    highscore: data.highscore || 0,
-                    transferHistory: data.transfers || []
-                });
-            }
+            const data = snapshot.val() || {};
+            updateUserState({
+                coins: data.balance || 100, // Дефолтное значение
+                highscore: data.highscore || 0,
+                transferHistory: data.transfers || []
+            });
             resolve();
         });
     });
