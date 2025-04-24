@@ -1,4 +1,7 @@
-// Firebase configuration and initialization
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/database';
+import 'firebase/compat/auth';
+
 const firebaseConfig = {
     apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
     authDomain: "fastcoin-7db18.firebaseapp.com",
@@ -9,7 +12,6 @@ const firebaseConfig = {
     appId: "1:1024804439259:web:351a470a824712c494f8fe"
 };
 
-// Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
