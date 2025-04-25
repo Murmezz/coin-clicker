@@ -1,110 +1,100 @@
 import { db } from './firebase.js';
-import { getUserId, getCoins, updateUserState, getTransferHistory } from './user.js';
+import { getUserId, getUsername, getCoins, getTransferHistory, updateUserState } from './user.js';
+import { updateDisplays } from './ui.js';
+
+export async function findUser(username) {
+    if (!username.startsWith('@')) return null;
+    
+    try {
+        const searchUsername = username.toLowerCase();
+        const snapshot = await db.ref('users')
+            .orderByChild('username')
+            .equalTo(searchUsername)
+            .once('value');
+        
+        if (snapshot.exists()) {
+            const users = snapshot.val();
+            const userId = Object.keys(users)[0];
+            return { 
+                userId,
+                username: users[userId].username,
+                balance: users[userId].balance || 0,
+                transfers: users[userId].transfers || []
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Ошибка поиска:', error);
+        return null;
+    }
+}
 
 export async function makeTransfer(recipientUsername, amount) {
     try {
-        const result = await sendCoins(recipientUsername, amount);
-        if (result) {
-            await updateTransferHistory();
-            return { success: true, message: 'Перевод успешно выполнен' };
-        }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
+        const currentUsername = getUsername();
+        const coins = getCoins();
+        const USER_ID = getUserId();
+        const transferHistory = getTransferHistory();
 
-export async function sendCoins(recipientUsername, amount) {
-    try {
-        const senderUserId = getUserId();
-        const currentBalance = getCoins();
+        // Проверки
+        if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
+            return { success: false, message: 'Нельзя перевести себе' };
+        }
         
-        if (!senderUserId) {
-            throw new Error('User not authenticated');
+        const recipient = await findUser(recipientUsername);
+        if (!recipient) {
+            return { success: false, message: 'Пользователь не зарегистрирован' };
+        }
+        
+        if (amount > coins || amount < 1) {
+            return { success: false, message: 'Некорректная сумма' };
         }
 
-        amount = parseInt(amount);
-        if (isNaN(amount) || amount <= 0) {
-            throw new Error('Invalid amount');
-        }
-
-        if (amount > currentBalance) {
-            throw new Error('Insufficient balance');
-        }
-
-        const usersRef = db.ref('users');
-        const recipientSnapshot = await usersRef
-            .orderByChild('username')
-            .equalTo(recipientUsername.replace('@', ''))
-            .once('value');
-
-        if (!recipientSnapshot.exists()) {
-            throw new Error('Recipient not found');
-        }
-
-        const recipientData = Object.values(recipientSnapshot.val())[0];
-        const recipientId = recipientData.telegramId;
-
-        if (recipientId === senderUserId) {
-            throw new Error('Cannot send coins to yourself');
-        }
-
-        const transferRef = db.ref('transfers').push();
-        const transferData = {
-            senderId: senderUserId,
-            recipientId: recipientId,
+        const transaction = {
+            date: new Date().toISOString(),
+            from: currentUsername,
+            to: recipientUsername,
             amount: amount,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
+            status: 'completed'
         };
 
         const updates = {};
-        updates[`users/${senderUserId}/balance`] = currentBalance - amount;
-        updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
-        updates[`transfers/${transferRef.key}`] = transferData;
+        updates[`users/${USER_ID}/balance`] = coins - amount;
+        updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
+        updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
+        updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
 
         await db.ref().update(updates);
 
-        return true;
+        updateUserState({
+            coins: coins - amount,
+            transferHistory: [...transferHistory, transaction]
+        });
+        
+        updateDisplays();
+
+        return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
-        console.error('Error sending coins:', error);
-        throw error;
+        console.error('Ошибка перевода:', error);
+        return { success: false, message: 'Ошибка при переводе' };
     }
 }
 
-export async function updateTransferHistory() {
-    try {
-        const history = await getTransferHistory();
-        const historyList = document.getElementById('history-list');
-        
-        if (!historyList) return;
-
-        historyList.innerHTML = '';
-
-        if (history.length === 0) {
-            historyList.innerHTML = '<div class="empty-history">История переводов пуста</div>';
-            return;
-        }
-
-        history.forEach(transfer => {
-            const isOutgoing = transfer.senderId === getUserId();
-            const historyItem = document.createElement('div');
-            historyItem.className = `history-item ${isOutgoing ? 'outgoing' : 'incoming'}`;
-            
-            historyItem.innerHTML = `
-                <div class="history-info">
-                    <span class="history-direction-icon">${isOutgoing ? '↑' : '↓'}</span>
-                    <div>
-                        <span class="history-username">${isOutgoing ? 'Отправлено' : 'Получено'}</span>
-                        <span class="history-date">${new Date(transfer.timestamp).toLocaleString()}</span>
-                    </div>
+export function renderTransferHistory() {
+    const historyList = document.getElementById('history-list');
+    if (!historyList) return;
+    
+    const transferHistory = getTransferHistory();
+    
+    historyList.innerHTML = transferHistory.length === 0 
+        ? '<p>Нет истории переводов</p>'
+        : transferHistory.slice(0, 10).map(tx => `
+            <div class="history-item ${tx.status}">
+                <div>
+                    <span class="history-username">${tx.to}</span>
+                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
                 </div>
-                <span class="history-amount ${isOutgoing ? 'outgoing' : 'incoming'}">
-                    ${isOutgoing ? '-' : '+'}${transfer.amount}
-                </span>
-            `;
-            
-            historyList.appendChild(historyItem);
-        });
-    } catch (error) {
-        console.error('Error updating transfer history:', error);
-    }
+                <span class="history-amount">-${tx.amount}</span>
+            </div>
+        `).join('');
 }
