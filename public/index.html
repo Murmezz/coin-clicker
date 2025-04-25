@@ -12,48 +12,44 @@
 
     <script>
     // Обработчик данных Telegram WebApp
-    (function() {
-        if (!window.Telegram?.WebApp) {
-            console.warn('Telegram WebApp not detected. Running in fallback mode');
-            return;
-        }
-
-        try {
-            // Нормализация initData
-            if (Telegram.WebApp.initData) {
-                if (typeof Telegram.WebApp.initData === 'string') {
-                    const params = new URLSearchParams(Telegram.WebApp.initData);
-                    Telegram.WebApp.initDataUnsafe = {};
-                    
+   (function() {
+    if (!window.Telegram?.WebApp) return;
+    
+    try {
+        // Если initData существует, но initDataUnsafe - нет
+        if (Telegram.WebApp.initData && !Telegram.WebApp.initDataUnsafe) {
+            Telegram.WebApp.initDataUnsafe = {};
+            
+            // Обрабатываем разные форматы данных
+            if (typeof Telegram.WebApp.initData === 'string') {
+                // Удаляем некорректные символы в начале строки
+                const cleanData = Telegram.WebApp.initData.replace(/^[^a-zA-Z0-9]+/, '');
+                
+                try {
+                    // Пробуем распарсить как URL-параметры
+                    const params = new URLSearchParams(cleanData);
                     params.forEach((value, key) => {
-                        // Пропускаем некорректные данные
-                        if (value.includes('!_{')) {
-                            console.warn('Skipping invalid data:', key, value);
-                            return;
-                        }
-                        
                         try {
                             Telegram.WebApp.initDataUnsafe[key] = 
                                 value.startsWith('{') ? JSON.parse(value) : value;
-                        } catch (e) {
-                            console.warn('Parse error for:', key, value);
+                        } catch {
                             Telegram.WebApp.initDataUnsafe[key] = value;
                         }
                     });
+                } catch (e) {
+                    console.warn('Failed to parse initData as URL params', e);
                 }
             }
-
-            // Инициализация WebApp
-            Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
-            Telegram.WebApp.enableClosingConfirmation();
-            
-            console.log('Telegram WebApp initialized:', Telegram.WebApp);
-        } catch (e) {
-            console.error('Telegram WebApp init error:', e);
         }
-    })();
-    </script>
+        
+        // Инициализация WebApp
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+    } catch (e) {
+        console.error('Telegram WebApp initialization error:', e);
+    }
+})();
+</script>
 </head>
 <body>
     <div class="container">
