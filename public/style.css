@@ -250,286 +250,106 @@ body {
 }
 
 /* Контент страницы */
-.page-content {
-  color: var(--text-color);            /* Цвет текста */
-  font-size: 18px;                     /* Размер шрифта */
-  line-height: 1.6;                    /* Межстрочный интервал */
-  padding: 20px;                       /* Внутренние отступы */
-  text-align: center;                  /* Центрирование текста */
-}
-
-/* Форма перевода */
-.transfer-form {
-  display: flex;                       /* Flex-контейнер */
-  flex-direction: column;              /* Вертикальное расположение */
-  gap: 15px;                           /* Расстояние между элементами */
-  padding: 20px;                       /* Внутренние отступы */
-  max-width: 400px;                    /* Максимальная ширина */
-  margin: 0 auto;                      /* Центрирование */
-}
-
-/* Поля ввода */
-.transfer-input {
-  padding: 15px;                       /* Внутренние отступы */
-  border-radius: 15px;                 /* Закругление углов */
-  border: 2px solid var(--button-bg);  /* Граница */
-  background: var(--container-bg);     /* Цвет фона */
-  color: var(--text-color);            /* Цвет текста */
-  font-size: 16px;                     /* Размер шрифта */
-  width: 100%;                         /* Ширина на весь контейнер */
-  transition: border-color 0.3s;       /* Плавная анимация */
-}
-
-/* Фокус на поле ввода */
-.transfer-input:focus {
-  outline: none;                       /* Убираем стандартный контур */
-  border-color: var(--button-hover);   /* Изменение цвета границы */
-}
-
-/* Кнопка отправки */
-.transfer-button {
-  background: linear-gradient(135deg, var(--button-bg) 0%, var(--button-hover) 100%); /* Градиент */
-  color: white;                        /* Цвет текста */
-  border: none;                        /* Без границы */
-  border-radius: 15px;                 /* Закругление углов */
-  padding: 15px;                       /* Внутренние отступы */
-  font-size: 18px;                     /* Размер шрифта */
-  font-weight: bold;                   /* Жирный шрифт */
-  cursor: pointer;                     /* Курсор-указатель */
-  transition: all 0.2s ease;           /* Плавные анимации */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Тень */
-}
-
-/* Эффект при нажатии */
-.transfer-button:active {
-  transform: scale(0.95);              /* Уменьшение */
-}
-
-/* Сообщения формы */
-.transfer-message {
-  margin-top: 15px;                    /* Отступ сверху */
-  padding: 10px;                       /* Внутренние отступы */
-  border-radius: 10px;                 /* Закругление углов */
-  text-align: center;                  /* Центрирование текста */
-  font-size: 16px;                     /* Размер шрифта */
-}
-
-/* Успешное сообщение */
-.success-message {
-  background: rgba(76, 175, 80, 0.2);  /* Полупрозрачный фон */
-  color: var(--success-color);         /* Цвет текста */
-}
-
-/* Сообщение об ошибке */
-.error-message {
-  background: rgba(244, 67, 54, 0.2);  /* Полупрозрачный фон */
-  color: var(--error-color);           /* Цвет текста */
-}
-
-/* Информационное сообщение */
-.info-message {
-  background: rgba(33, 150, 243, 0.2); /* Полупрозрачный фон */
-  color: var(--info-color);            /* Цвет текста */
-}
-
-/* История переводов */
-.transfer-history {
-  margin-top: 30px;                    /* Отступ сверху */
-  border-top: 1px solid var(--border-color); /* Граница сверху */
-  padding-top: 20px;                   /* Внутренний отступ */
-}
-
-.transfer-history h3 {
-  margin-bottom: 15px;                 /* Отступ снизу */
-  color: var(--text-color);            /* Цвет текста */
-}
-
-/* Список истории */
-.history-list {
-  max-height: 200px;                   /* Максимальная высота */
-  overflow-y: auto;                    /* Вертикальный скролл */
-}
-
-/* Элемент истории */
-.history-item {
-  padding: 10px;                       /* Внутренние отступы */
-  margin-bottom: 8px;                  /* Отступ снизу */
-  background: rgba(255,255,255,0.05);  /* Полупрозрачный фон */
-  border-radius: 8px;                  /* Закругление углов */
-  display: flex;                       /* Flex-контейнер */
-  justify-content: space-between;      /* Распределение пространства */
-}
-
-/* Исходящий перевод */
-.history-item.outgoing {
-  border-left: 3px solid var(--error-color); /* Граница слева */
-}
-
-/* Входящий перевод */
-.history-item.incoming {
-  border-left: 3px solid var(--success-color); /* Граница слева */
-}
-
-/* Имя пользователя в истории */
-.history-username {
-  font-weight: bold;                   /* Жирный шрифт */
-}
-
-/* Сумма в истории */
-.history-amount {
-  font-weight: bold;                   /* Жирный шрифт */
-}
-
-/* Исходящая сумма */
-.history-amount.outgoing {
-  color: var(--error-color);           /* Цвет текста */
-}
-
-/* Входящая сумма */
-.history-amount.incoming {
-  color: var(--success-color);         /* Цвет текста */
-}
-
-/* Дата в истории */
-.history-date {
-  font-size: 12px;                     /* Размер шрифта */
-  color: #aaa;                         /* Цвет текста */
-  display: block;                      /* Блочный элемент */
-  margin-top: 3px;                     /* Отступ сверху */
-}
-
-/* Адаптив для мобильных */
-@media (max-width: 400px) {
-  .nav-button {
-    padding: 14px 8px;                 /* Уменьшенные отступы */
-    font-size: 16px;                   /* Уменьшенный шрифт */
-  }
-  
-  .coin-container {
-    width: 250px;                      /* Уменьшенный размер */
-    height: 250px;                     /* Уменьшенный размер */
-  }
-  
-  .balance {
-    font-size: 24px;                   /* Уменьшенный шрифт */
-  }
-  
-  .stats {
-    font-size: 20px;                   /* Уменьшенный шрифт */
-  }
-  
-  .page-header {
-    height: 50px;                      /* Уменьшенная высота */
-    padding: 10px;                     /* Уменьшенные отступы */
-  }
-  
-  .back-button {
-    font-size: 24px;                   /* Уменьшенный размер */
-  }
-  
-  .page-title {
-    font-size: 18px;                   /* Уменьшенный шрифт */
-  }
-  
-  .transfer-input {
-    padding: 12px;                     /* Уменьшенные отступы */
-    font-size: 14px;                   /* Уменьшенный шрифт */
-  }
-  
-  .transfer-button {
-    padding: 12px;                     /* Уменьшенные отступы */
-    font-size: 16px;                   /* Уменьшенный шрифт */
-  }
-
 #pages-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
-    background-color: var(--tg-theme-bg-color, #ffffff);
+    height: 100vh;
+    background: var(--tg-theme-secondary-bg-color);
     z-index: 1000;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .transfer-page {
-    padding: 20px;
-    width: 100%;
-    height: 100%;
+    flex: 1;
+    background: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
     display: flex;
     flex-direction: column;
-    gap: 16px;
 }
 
 .page-header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--tg-theme-bg-color);
+    border-bottom: 1px solid var(--tg-theme-hint-color);
 }
 
 .back-button {
     background: none;
     border: none;
-    font-size: 24px;
-    color: var(--tg-theme-button-color, #2481cc);
-    cursor: pointer;
+    color: var(--tg-theme-button-color);
+    font-size: 20px;
     padding: 8px;
+    margin-right: 16px;
+    cursor: pointer;
 }
 
 .transfer-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    padding: 16px;
 }
 
 .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .input-group label {
-    color: var(--tg-theme-text-color, #000000);
-    font-size: 14px;
+    display: block;
+    margin-bottom: 8px;
+    color: var(--tg-theme-text-color);
 }
 
 .input-group input {
+    width: 100%;
     padding: 12px;
-    border: 1px solid var(--tg-theme-hint-color, #999999);
+    border: 1px solid var(--tg-theme-hint-color);
     border-radius: 8px;
-    background: var(--tg-theme-bg-color, #ffffff);
-    color: var(--tg-theme-text-color, #000000);
-}
-
-#send-coins {
-    background-color: var(--tg-theme-button-color, #2481cc);
-    color: var(--tg-theme-button-text-color, #ffffff);
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
+    background: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
     font-size: 16px;
 }
 
-.transfer-message {
+#send-coins {
+    width: 100%;
     padding: 12px;
+    background: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    border: none;
     border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
     margin-top: 16px;
 }
 
+.transfer-message {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
 .success-message {
-    background-color: #4CAF50;
-    color: white;
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
 }
 
 .error-message {
-    background-color: #f44336;
-    color: white;
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
 }
 
 .history-container {
     margin-top: 24px;
+    padding: 16px;
+    flex: 1;
+}
+
+.history-container h3 {
+    margin-bottom: 16px;
+    color: var(--tg-theme-text-color);
 }
 
 .history-item {
@@ -537,11 +357,46 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    border-bottom: 1px solid var(--tg-theme-hint-color, #999999);
+    border-bottom: 1px solid var(--tg-theme-hint-color);
+    background: var(--tg-theme-bg-color);
+}
+
+.history-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.history-direction-icon {
+    font-size: 18px;
+    color: var(--tg-theme-hint-color);
+}
+
+.history-username {
+    color: var(--tg-theme-text-color);
+    font-weight: 500;
+}
+
+.history-date {
+    color: var(--tg-theme-hint-color);
+    font-size: 14px;
+    display: block;
+}
+
+.history-amount {
+    font-weight: 500;
+}
+
+.history-amount.outgoing {
+    color: #f44336;
+}
+
+.history-amount.incoming {
+    color: #4CAF50;
 }
 
 .empty-history {
     text-align: center;
-    color: var(--tg-theme-hint-color, #999999);
-    padding: 20px;
+    color: var(--tg-theme-hint-color);
+    padding: 32px 16px;
 }
