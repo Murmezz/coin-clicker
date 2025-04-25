@@ -20,31 +20,40 @@ export const updateUserState = (newState) => {
 
 export async function initUser() {
     try {
-        // Получаем ID пользователя Telegram
+        await auth.signInAnonymously();
+        
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        if (!tgUser) {
-            throw new Error('Telegram user not found');
-        }
+        if (!tgUser) throw new Error('Telegram user not found');
 
-        const tgUserId = tgUser.id.toString(); // Уникальный ID аккаунта TG
-        state.USER_ID = `tg_${tgUserId}`; // Префикс для ясности
+        state.USER_ID = `tg_${tgUser.id}`;
         state.currentUsername = tgUser.username 
             ? `@${tgUser.username.toLowerCase()}` 
             : `@user${tgUser.id.toString().slice(-4)}`;
 
-        // Проверяем, есть ли пользователь в базе
         const userRef = db.ref(`users/${state.USER_ID}`);
         const snapshot = await userRef.once('value');
 
         if (!snapshot.exists()) {
-            // Создаём нового пользователя
+            // Создаем запись пользователя
             await userRef.set({
                 username: state.currentUsername,
                 balance: 0,
                 highscore: 0,
                 transfers: []
             });
+            
+            // Добавляем в индекс юзернеймов
+            await db.ref(`usernames/${state.currentUsername.toLowerCase()}`)
+                  .set(state.USER_ID);
         }
+
+        await loadData();
+    } catch (error) {
+        console.error('Init error:', error);
+        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
+        state.currentUsername = '@guest';
+    }
+}
 
         // Загружаем данные
         await loadData();
