@@ -1,4 +1,3 @@
-// Firebase configuration and initialization
 const firebaseConfig = {
     apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
     authDomain: "fastcoin-7db18.firebaseapp.com",
@@ -9,9 +8,13 @@ const firebaseConfig = {
     appId: "1:1024804439259:web:351a470a824712c494f8fe"
 };
 
-// Initialize Firebase
+// Инициализируем Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
+
+// Добавляем анонимную авторизацию
+auth.signInAnonymously()
+    .catch(error => console.error('Auth error:', error));
 
 export { db, auth };
