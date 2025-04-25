@@ -23,10 +23,21 @@ export const updateUserState = (newState) => {
 
 export async function initUser() {
     try {
-        // Ждем аутентификации
         await auth.signInAnonymously();
         
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        // Новый способ получения данных пользователя
+        let tgUser = null;
+        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+            tgUser = Telegram.WebApp.initDataUnsafe.user;
+        } else if (window.Telegram?.WebApp?.initData) {
+            // Парсим initData если он пришел как строка
+            const initData = new URLSearchParams(Telegram.WebApp.initData);
+            const userStr = initData.get('user');
+            if (userStr) {
+                tgUser = JSON.parse(userStr);
+            }
+        }
+
         if (!tgUser) {
             throw new Error('Telegram user not found');
         }
@@ -41,7 +52,6 @@ export async function initUser() {
         const snapshot = await userRef.once('value');
 
         if (!snapshot.exists()) {
-            // Создаем запись пользователя
             await userRef.set({
                 username: state.currentUsername,
                 balance: 0,
@@ -49,7 +59,6 @@ export async function initUser() {
                 transfers: []
             });
             
-            // Добавляем в индекс юзернеймов
             await db.ref(`usernames/${state.currentUsername.toLowerCase()}`)
                   .set(state.USER_ID);
         }
