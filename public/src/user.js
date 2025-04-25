@@ -1,22 +1,37 @@
-import { auth, db } from './firebase.js';
+// Вместо импорта используем глобальный объект
+const { db, auth } = window.firebaseApp;
 
-let state = {
-    USER_ID: '',
-    currentUsername: '',
-    coins: 0,
-    highscore: 0,
-    transferHistory: []
+const state = {
+  USER_ID: '',
+  currentUsername: '',
+  coins: 0,
+  highscore: 0
 };
 
-export const getUserId = () => state.USER_ID;
-export const getUsername = () => state.currentUsername;
-export const getCoins = () => state.coins;
-export const getHighscore = () => state.highscore;
-export const getTransferHistory = () => [...state.transferHistory];
+export async function initUser() {
+  try {
+    // Ждем аутентификации
+    await new Promise((resolve) => {
+      auth.onAuthStateChanged(user => resolve(user));
+    });
 
-export const updateUserState = (newState) => {
-    state = { ...state, ...newState };
-};
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+    state.USER_ID = `tg_${tgUser.id || 'guest_' + Math.random().toString(36).substr(2, 8)}`;
+    state.currentUsername = tgUser.username 
+      ? `@${tgUser.username.toLowerCase()}` 
+      : `@user${state.USER_ID.slice(-4)}`;
+
+    // Создаем/обновляем пользователя
+    await db.ref(`users/${state.USER_ID}`).update({
+      username: state.currentUsername,
+      balance: firebase.database.ServerValue.increment(0),
+      highscore: firebase.database.ServerValue.increment(0)
+    });
+
+  } catch (error) {
+    console.error('Init error:', error);
+  }
+}
 
 export async function initUser() {
     try {
