@@ -6,20 +6,18 @@ export async function findUser(username) {
     if (!username.startsWith('@')) return null;
     
     try {
-        const searchUsername = username.toLowerCase();
         const snapshot = await db.ref('users')
             .orderByChild('username')
-            .equalTo(searchUsername)
+            .equalTo(username.toLowerCase())
             .once('value');
-        
+
         if (snapshot.exists()) {
-            const users = snapshot.val();
-            const userId = Object.keys(users)[0];
-            return { 
-                userId,
-                username: users[userId].username,
-                balance: users[userId].balance || 0,
-                transfers: users[userId].transfers || []
+            const userData = Object.values(snapshot.val())[0];
+            return {
+                userId: Object.keys(snapshot.val())[0],
+                username: userData.username,
+                balance: userData.balance || 0,
+                transfers: userData.transfers || []
             };
         }
         return null;
@@ -34,22 +32,20 @@ export async function makeTransfer(recipientUsername, amount) {
         const currentUsername = getUsername();
         const coins = getCoins();
         const USER_ID = getUserId();
-        const transferHistory = getTransferHistory();
+        const recipient = await findUser(recipientUsername);
 
         // Проверки
         if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
             return { success: false, message: 'Нельзя перевести себе' };
         }
-        
-        const recipient = await findUser(recipientUsername);
         if (!recipient) {
-            return { success: false, message: 'Пользователь не зарегистрирован' };
+            return { success: false, message: 'Пользователь не найден' };
         }
-        
         if (amount > coins || amount < 1) {
             return { success: false, message: 'Некорректная сумма' };
         }
 
+        // Создаем транзакцию
         const transaction = {
             date: new Date().toISOString(),
             from: currentUsername,
@@ -58,21 +54,23 @@ export async function makeTransfer(recipientUsername, amount) {
             status: 'completed'
         };
 
-        const updates = {};
-        updates[`users/${USER_ID}/balance`] = coins - amount;
-        updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
-        updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
-        updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
+        // Обновляем данные
+        await db.ref(`users/${USER_ID}`).update({
+            balance: coins - amount,
+            transfers: [...getTransferHistory(), transaction]
+        });
 
-        await db.ref().update(updates);
+        await db.ref(`users/${recipient.userId}`).update({
+            balance: (recipient.balance || 0) + amount,
+            transfers: [...(recipient.transfers || []), transaction]
+        });
 
         updateUserState({
             coins: coins - amount,
-            transferHistory: [...transferHistory, transaction]
+            transferHistory: [...getTransferHistory(), transaction]
         });
-        
-        updateDisplays();
 
+        updateDisplays();
         return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
         console.error('Ошибка перевода:', error);
@@ -85,16 +83,13 @@ export function renderTransferHistory() {
     if (!historyList) return;
     
     const transferHistory = getTransferHistory();
-    
     historyList.innerHTML = transferHistory.length === 0 
         ? '<p>Нет истории переводов</p>'
         : transferHistory.slice(0, 10).map(tx => `
-            <div class="history-item ${tx.status}">
-                <div>
-                    <span class="history-username">${tx.to}</span>
-                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
-                </div>
+            <div class="history-item">
+                <span class="history-username">${tx.to}</span>
                 <span class="history-amount">-${tx.amount}</span>
+                <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
             </div>
         `).join('');
 }
