@@ -1,113 +1,65 @@
-import { db, auth } from './firebase.js';
+import { auth, db } from './firebase.js';
 
-let userData = {
+// Приватные переменные состояния
+let state = {
+    USER_ID: '',
+    currentUsername: '',
     coins: 0,
     highscore: 0,
-    telegramId: null,
-    username: null
+    transferHistory: []
 };
 
-export function getUserId() {
-    return userData.telegramId;
-}
+// Геттеры для получения данных
+export const getUserId = () => state.USER_ID;
+export const getUsername = () => state.currentUsername;
+export const getCoins = () => state.coins;
+export const getHighscore = () => state.highscore;
+export const getTransferHistory = () => [...state.transferHistory];
 
-export function getCoins() {
-    return userData.coins;
-}
-
-export function getHighscore() {
-    return userData.highscore;
-}
-
-export function updateUserState(newState) {
-    userData = { ...userData, ...newState };
-}
+// Сеттеры для обновления данных
+export const updateUserState = (newState) => {
+    state = { ...state, ...newState };
+};
 
 export async function initUser() {
     try {
-        const tg = window.Telegram.WebApp;
-        const initData = tg.initDataUnsafe;
-        
-        if (initData && initData.user) {
-            const telegramUser = initData.user;
-            userData.telegramId = String(telegramUser.id);
-            userData.username = telegramUser.username || null;
+        const { user } = await auth.signInAnonymously();
+        state.USER_ID = user.uid;
 
-            const userRef = db.ref(`users/${userData.telegramId}`);
-            const snapshot = await userRef.once('value');
-            
-            if (!snapshot.exists()) {
-                await userRef.set({
-                    telegramId: userData.telegramId,
-                    username: userData.username,
-                    balance: 0,
-                    highscore: 0,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
-
-            userRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    updateUserState({
-                        coins: data.balance || 0,
-                        highscore: data.highscore || 0
-                    });
-                }
-            });
+        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+            const tgUser = Telegram.WebApp.initDataUnsafe.user;
+            state.currentUsername = tgUser.username 
+                ? `@${tgUser.username.toLowerCase()}` 
+                : `@user${tgUser.id.slice(-4)}`;
+        } else {
+            state.currentUsername = `@user_${Math.random().toString(36).substr(2, 8)}`;
         }
+
+        await db.ref(`users/${state.USER_ID}`).update({
+            username: state.currentUsername,
+            balance: firebase.database.ServerValue.increment(0),
+            highscore: firebase.database.ServerValue.increment(0)
+        });
+
     } catch (error) {
-        console.error('Error initializing user:', error);
-        throw error;
+        console.error('Ошибка инициализации:', error);
+        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
+        state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
     }
 }
 
 export async function loadData() {
-    try {
-        if (userData.telegramId) {
-            const snapshot = await db.ref(`users/${userData.telegramId}`).once('value');
-            const data = snapshot.val();
-            
-            if (data) {
+    return new Promise((resolve) => {
+        db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
                 updateUserState({
                     coins: data.balance || 0,
-                    highscore: data.highscore || 0
+                    highscore: data.highscore || 0,
+                    transferHistory: data.transfers || []
                 });
             }
-        }
-    } catch (error) {
-        console.error('Error loading data:', error);
-        throw error;
-    }
-}
-
-export async function getTransferHistory() {
-    try {
-        if (userData.telegramId) {
-            const transfersRef = db.ref(`transfers/${userData.telegramId}`);
-            const snapshot = await transfersRef.orderByChild('timestamp').limitToLast(10).once('value');
-            const transfers = [];
-            
-            snapshot.forEach((childSnapshot) => {
-                transfers.unshift(childSnapshot.val());
-            });
-            
-            return transfers;
-        }
-        return [];
-    } catch (error) {
-        console.error('Error getting transfer history:', error);
-        return [];
-    }
-}
-
-export async function updateUserData(updates) {
-    try {
-        if (userData.telegramId) {
-            await db.ref(`users/${userData.telegramId}`).update(updates);
-        }
-    } catch (error) {
-        console.error('Error updating user data:', error);
-        throw error;
-    }
+            resolve();
+        });
+    });
 }
