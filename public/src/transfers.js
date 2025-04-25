@@ -1,6 +1,18 @@
 import { db } from './firebase.js';
 import { getUserId, getCoins, updateUserState, getTransferHistory } from './user.js';
 
+export async function makeTransfer(recipientUsername, amount) {
+    try {
+        const result = await sendCoins(recipientUsername, amount);
+        if (result) {
+            await updateTransferHistory();
+            return { success: true, message: 'Перевод успешно выполнен' };
+        }
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
 export async function sendCoins(recipientUsername, amount) {
     try {
         const senderUserId = getUserId();
