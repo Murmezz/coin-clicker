@@ -22,10 +22,12 @@ export async function findUser(username) {
         }
         return null;
     } catch (error) {
-        console.error('Ошибка поиска:', error);
+        console.error('Search error:', error);
         return null;
     }
 }
+
+// ... остальной код transfers.js без изменений ...
 
 export async function makeTransfer(recipientUsername, amount) {
     try {
