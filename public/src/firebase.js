@@ -1,27 +1,24 @@
-// Импортируем Firebase через CDN (без модулей)
-function initializeFirebase() {
-    const firebaseConfig = {
-        apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
-        authDomain: "fastcoin-7db18.firebaseapp.com",
-        databaseURL: "https://fastcoin-7db18-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "fastcoin-7db18",
-        storageBucket: "fastcoin-7db18.appspot.com",
-        messagingSenderId: "1024804439259",
-        appId: "1:1024804439259:web:351a470a824712c494f8fe"
-    };
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js";
 
-    // Инициализация
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(app);
-    const auth = firebase.auth(app);
+const firebaseConfig = {
+  apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
+  authDomain: "fastcoin-7db18.firebaseapp.com",
+  databaseURL: "https://fastcoin-7db18-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "fastcoin-7db18",
+  storageBucket: "fastcoin-7db18.appspot.com",
+  messagingSenderId: "1024804439259",
+  appId: "1:1024804439259:web:351a470a824712c494f8fe"
+};
 
-    // Анонимная авторизация
-    auth.signInAnonymously()
-        .catch(error => console.error("Auth error:", error));
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
 
-    // Глобальный доступ
-    window.firebaseApp = { db, auth };
-}
+// Авторизуемся анонимно
+signInAnonymously(auth)
+  .catch((error) => console.error("Auth error:", error));
 
-// Вызываем инициализацию при загрузке
-document.addEventListener('DOMContentLoaded', initializeFirebase);
+// Явно экспортируем необходимые объекты
+export { db, auth };
