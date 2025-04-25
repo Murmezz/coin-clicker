@@ -1,65 +1,102 @@
-import { auth, db } from './firebase.js';
+import { db, auth } from './firebase.js';
 
-// Приватные переменные состояния
-let state = {
-    USER_ID: '',
-    currentUsername: '',
+let userData = {
     coins: 0,
     highscore: 0,
-    transferHistory: []
+    telegramId: null,
+    username: null
 };
 
-// Геттеры для получения данных
-export const getUserId = () => state.USER_ID;
-export const getUsername = () => state.currentUsername;
-export const getCoins = () => state.coins;
-export const getHighscore = () => state.highscore;
-export const getTransferHistory = () => [...state.transferHistory];
+export function getUserId() {
+    return userData.telegramId;
+}
 
-// Сеттеры для обновления данных
-export const updateUserState = (newState) => {
-    state = { ...state, ...newState };
-};
+export function getCoins() {
+    return userData.coins;
+}
+
+export function getHighscore() {
+    return userData.highscore;
+}
+
+export function updateUserState(newState) {
+    userData = { ...userData, ...newState };
+}
 
 export async function initUser() {
     try {
-        const { user } = await auth.signInAnonymously();
-        state.USER_ID = user.uid;
-
-        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-            const tgUser = Telegram.WebApp.initDataUnsafe.user;
-            state.currentUsername = tgUser.username 
-                ? `@${tgUser.username.toLowerCase()}` 
-                : `@user${tgUser.id.slice(-4)}`;
-        } else {
-            state.currentUsername = `@user_${Math.random().toString(36).substr(2, 8)}`;
+        // Получаем данные из Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+            throw new Error('Telegram user data not available');
         }
 
-        await db.ref(`users/${state.USER_ID}`).update({
-            username: state.currentUsername,
-            balance: firebase.database.ServerValue.increment(0),
-            highscore: firebase.database.ServerValue.increment(0)
+        const telegramUser = tg.initDataUnsafe.user;
+        userData.telegramId = telegramUser.id.toString();
+        userData.username = telegramUser.username || null;
+
+        // Проверяем существование пользователя в базе
+        const userRef = db.ref(users/${userData.telegramId});
+        const snapshot = await userRef.once('value');
+        
+        if (!snapshot.exists()) {
+            // Создаем нового пользователя
+            await userRef.set({
+                telegramId: userData.telegramId,
+                username: userData.username,
+                balance: 0,
+                highscore: 0,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        // Устанавливаем слушатель изменений данных пользователя
+        userRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                updateUserState({
+                    coins: data.balance || 0,
+                    highscore: data.highscore || 0
+                });
+            }
         });
 
     } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
-        state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
+        console.error('Error initializing user:', error);
+        throw error;
     }
 }
 
 export async function loadData() {
-    return new Promise((resolve) => {
-        db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                updateUserState({
-                    coins: data.balance || 0,
-                    highscore: data.highscore || 0,
-                    transferHistory: data.transfers || []
-                });
-            }
-            resolve();
-        });
-    });
+    try {
+        if (!userData.telegramId) {
+            throw new Error('User not initialized');
+        }
+
+        const snapshot = await db.ref(users/${userData.telegramId}).once('value');
+        const data = snapshot.val();
+        
+        if (data) {
+            updateUserState({
+                coins: data.balance || 0,
+                highscore: data.highscore || 0
+            });
+        }
+    } catch (error) {
+        console.error('Error loading data:', error);
+        throw error;
+    }
+}
+
+export async function updateUserData(updates) {
+    try {
+        if (!userData.telegramId) {
+            throw new Error('User not initialized');
+        }
+
+        await db.ref(users/${userData.telegramId}).update(updates);
+    } catch (error) {
+        console.error('Error updating user data:', error);
+        throw error;
+    }
 }
