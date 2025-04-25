@@ -63,28 +63,41 @@
     <!-- Инициализация Telegram WebApp -->
     <script>
         // Нормализация данных Telegram WebApp
-        if (window.Telegram?.WebApp?.initData) {
-            try {
-                if (typeof Telegram.WebApp.initData === 'string') {
-                    const initData = new URLSearchParams(Telegram.WebApp.initData);
-                    Telegram.WebApp.initDataUnsafe = {};
+       <script>
+// Фикс для некорректных данных Telegram WebApp
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.Telegram?.WebApp?.initData) {
+        try {
+            // Если initData - строка с параметрами URL
+            if (typeof Telegram.WebApp.initData === 'string') {
+                const params = new URLSearchParams(Telegram.WebApp.initData);
+                Telegram.WebApp.initDataUnsafe = {};
+                
+                params.forEach((value, key) => {
+                    // Пропускаем некорректные значения
+                    if (value.startsWith('!_{')) {
+                        console.warn('Skipping invalid value:', key, value);
+                        return;
+                    }
                     
-                    initData.forEach((value, key) => {
-                        try {
-                            Telegram.WebApp.initDataUnsafe[key] = value.startsWith('{') 
-                                ? JSON.parse(value) 
-                                : value;
-                        } catch {
-                            Telegram.WebApp.initDataUnsafe[key] = value;
-                        }
-                    });
-                }
-                Telegram.WebApp.expand(); // Раскрываем WebApp на весь экран
-            } catch (e) {
-                console.warn('Error processing Telegram initData:', e);
+                    try {
+                        Telegram.WebApp.initDataUnsafe[key] = 
+                            value.startsWith('{') ? JSON.parse(value) : value;
+                    } catch (e) {
+                        Telegram.WebApp.initDataUnsafe[key] = value;
+                    }
+                });
             }
+            
+            // Инициализируем WebApp
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
+        } catch (e) {
+            console.error('Telegram WebApp init error:', e);
         }
-    </script>
+    }
+});
+</script>
 
     <!-- Подключаем скрипты как модули -->
     <script src="src/firebase.js" type="module"></script>
