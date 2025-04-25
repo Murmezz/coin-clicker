@@ -1,7 +1,6 @@
 import { auth, db } from './firebase.js';
 
-// Приватные переменные состояния
-let state = {
+const state = {
     USER_ID: '',
     currentUsername: '',
     coins: 0,
@@ -9,32 +8,29 @@ let state = {
     transferHistory: []
 };
 
-// Геттеры для получения данных
 export const getUserId = () => state.USER_ID;
 export const getUsername = () => state.currentUsername;
 export const getCoins = () => state.coins;
 export const getHighscore = () => state.highscore;
 export const getTransferHistory = () => [...state.transferHistory];
 
-// Сеттеры для обновления данных
 export const updateUserState = (newState) => {
-    state = { ...state, ...newState };
+    Object.assign(state, newState);
 };
 
 export async function initUser() {
     try {
         await auth.signInAnonymously();
         
-        let tgUser = null;
-        
         // Безопасное получение данных пользователя
+        let tgUser = null;
         if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
             tgUser = Telegram.WebApp.initDataUnsafe.user;
         } else {
             // Fallback для тестирования
             tgUser = {
                 id: Math.floor(Math.random() * 1000000),
-                username: 'testuser'
+                first_name: 'Guest'
             };
         }
 
@@ -59,40 +55,7 @@ export async function initUser() {
         await loadData();
     } catch (error) {
         console.error('Init error:', error);
-        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
-        state.currentUsername = '@guest';
-    }
-}
-
-        if (!tgUser) {
-            throw new Error('Telegram user not found');
-        }
-
-        state.USER_ID = `tg_${tgUser.id}`;
-        state.currentUsername = tgUser.username 
-            ? `@${tgUser.username.toLowerCase()}` 
-            : `@user${tgUser.id.toString().slice(-4)}`;
-
-        // Проверяем наличие пользователя
-        const userRef = db.ref(`users/${state.USER_ID}`);
-        const snapshot = await userRef.once('value');
-
-        if (!snapshot.exists()) {
-            await userRef.set({
-                username: state.currentUsername,
-                balance: 0,
-                highscore: 0,
-                transfers: []
-            });
-            
-            await db.ref(`usernames/${state.currentUsername.toLowerCase()}`)
-                  .set(state.USER_ID);
-        }
-
-        await loadData();
-    } catch (error) {
-        console.error('Init error:', error);
-        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
+        state.USER_ID = `local_${Math.random().toString(36).slice(2, 11)}`;
         state.currentUsername = '@guest';
     }
 }
