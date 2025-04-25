@@ -7,24 +7,22 @@ export async function findUser(username) {
     
     try {
         const searchUsername = username.toLowerCase();
+        const snapshot = await db.ref('users')
+            .orderByChild('username')
+            .equalTo(searchUsername)
+            .once('value');
         
-        // 1. Находим ID пользователя по юзернейму
-        const userIdSnapshot = await db.ref(`usernames/${searchUsername}`).once('value');
-        if (!userIdSnapshot.exists()) return null;
-        
-        const userId = userIdSnapshot.val();
-        
-        // 2. Получаем данные пользователя
-        const userSnapshot = await db.ref(`users/${userId}`).once('value');
-        if (!userSnapshot.exists()) return null;
-        
-        const userData = userSnapshot.val();
-        return {
-            userId,
-            username: userData.username,
-            balance: userData.balance || 0,
-            transfers: userData.transfers || []
-        };
+        if (snapshot.exists()) {
+            const users = snapshot.val();
+            const userId = Object.keys(users)[0];
+            return { 
+                userId,
+                username: users[userId].username,
+                balance: users[userId].balance || 0,
+                transfers: users[userId].transfers || []
+            };
+        }
+        return null;
     } catch (error) {
         console.error('Ошибка поиска:', error);
         return null;
