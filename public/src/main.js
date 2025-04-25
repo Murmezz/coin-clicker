@@ -1,35 +1,79 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    // Инициализация пользователя
-    await window.userModule.initUser();
-    
-    // Обновляем отображение баланса
-    document.getElementById('coins').textContent = window.userModule.getCoins();
-    document.getElementById('highscore').textContent = window.userModule.getHighscore();
-    
-    // Обработчик клика по монете
-    document.querySelector('.coin-button').addEventListener('click', () => {
-        const newCoins = window.userModule.coins + 1;
-        window.userModule.coins = newCoins;
-        window.userModule.highscore = Math.max(window.userModule.highscore, newCoins);
+import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
+import { showTransferPage, updateDisplays } from './ui.js';
+import { db } from './firebase.js';
+
+async function handleCoinClick() {
+    try {
+        const currentCoins = getCoins();
+        const currentHighscore = getHighscore();
+        const newCoins = currentCoins + 1;
+        const newHighscore = Math.max(currentHighscore, newCoins);
         
-        // Сохраняем и обновляем
-        firebase.database().ref(`users/${window.userModule.USER_ID}`).update({
-            balance: newCoins,
-            highscore: window.userModule.highscore
+        await db.ref(`users/${getUserId()}`).update({ 
+            balance: newCoins, 
+            highscore: newHighscore 
         });
         
-        document.getElementById('coins').textContent = newCoins;
-        document.getElementById('highscore').textContent = window.userModule.highscore;
-    });
-    
-    // Обработчики кнопок
-    document.querySelectorAll('.nav-button').forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (this.dataset.page === 'transfer') {
-                window.uiModule.showTransferPage();
-            } else {
-                alert(`${this.textContent} - раздел в разработке`);
-            }
+        updateUserState({
+            coins: newCoins,
+            highscore: newHighscore
         });
-    });
-});
+        
+        updateDisplays();
+    } catch (error) {
+        console.error('Ошибка при клике:', error);
+    }
+}
+
+function showSimplePage(title) {
+    const pagesContainer = document.getElementById('pages-container');
+    if (!pagesContainer) return;
+    
+    pagesContainer.innerHTML = `
+        <div class="page">
+            <div class="page-header">
+                <button class="back-button">←</button>
+                <h2 class="page-title">${title}</h2>
+            </div>
+            <div class="page-content">
+                <p>Раздел в разработке</p>
+            </div>
+        </div>
+    `;
+    pagesContainer.style.display = 'block';
+    
+    const backButton = pagesContainer.querySelector('.back-button');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            pagesContainer.style.display = 'none';
+        });
+    }
+}
+
+async function initializeApp() {
+    try {
+        await initUser();
+        await loadData();
+        updateDisplays();
+
+        const coinButton = document.querySelector('.coin-button');
+        if (coinButton) {
+            coinButton.addEventListener('click', handleCoinClick);
+        }
+
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.page === 'transfer') {
+                    showTransferPage();
+                } else {
+                    showSimplePage(btn.textContent);
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Ошибка инициализации:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initializeApp);
