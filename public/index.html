@@ -40,38 +40,33 @@
     <!-- Шаблоны страниц (скрытые) -->
     <div hidden>
         <!-- Шаблон страницы перевода -->
-<template id="transfer-page-template">
-    <div class="transfer-page">
-        <div class="page-header">
-            <button class="back-button">←</button>
-            <h2>Перевод монет</h2>
-        </div>
-        
-        <div class="input-group">
-            <label for="username">Получатель</label>
-            <input type="text" id="username" placeholder="Введите @username">
-        </div>
-        
-        <div class="input-group">
-            <label for="amount">Сумма</label>
-            <input type="number" id="amount" placeholder="Введите количество монет">
-        </div>
-        
-        <button id="send-coins">Отправить</button>
-        <div id="transfer-message" class="transfer-message"></div>
-        
-        <div class="history-container">
-            <h3>История переводов</h3>
-            <div id="history-list"></div>
+        <div id="transfer-page-template" class="page">
+            <div class="page-header">
+                <button class="back-button">←</button>
+                <h2 class="page-title">Перевод</h2>
+            </div>
+            <div class="page-content">
+                <div class="transfer-form">
+                    <input type="text" id="username" placeholder="@username получателя" class="transfer-input">
+                    <input type="number" id="amount" placeholder="Сумма" min="1" class="transfer-input">
+                    <button id="send-coins" class="transfer-button">Отправить</button>
+                    <div id="transfer-message" class="transfer-message"></div>
+                    <div class="transfer-history" id="transfer-history">
+                        <h3>История переводов</h3>
+                        <div class="history-list" id="history-list"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</template>
-        
+
     <!-- Подключаем скрипты как модули -->
     <script src="src/firebase.js" type="module"></script>
     <script src="src/user.js" type="module"></script>
     <script src="src/transfers.js" type="module"></script>
     <script src="src/ui.js" type="module"></script>
     <script src="src/main.js" type="module"></script>
+    <script src="app.js"></script>
+<link rel="stylesheet" href="styles.css">
 </body>
 </html>
