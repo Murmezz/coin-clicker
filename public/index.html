@@ -47,20 +47,18 @@
             <h2>Перевод монет</h2>
         </div>
         
-        <div class="transfer-form">
-            <div class="input-group">
-                <label for="username">Получатель</label>
-                <input type="text" id="username" placeholder="Введите @username">
-            </div>
-            
-            <div class="input-group">
-                <label for="amount">Сумма</label>
-                <input type="number" id="amount" placeholder="Введите количество монет">
-            </div>
-            
-            <button id="send-coins">Отправить</button>
-            <div id="transfer-message" class="transfer-message"></div>
+        <div class="input-group">
+            <label for="username">Получатель</label>
+            <input type="text" id="username" placeholder="Введите @username">
         </div>
+        
+        <div class="input-group">
+            <label for="amount">Сумма</label>
+            <input type="number" id="amount" placeholder="Введите количество монет">
+        </div>
+        
+        <button id="send-coins">Отправить</button>
+        <div id="transfer-message" class="transfer-message"></div>
         
         <div class="history-container">
             <h3>История переводов</h3>
@@ -68,7 +66,7 @@
         </div>
     </div>
 </template>
-
+        
     <!-- Подключаем скрипты как модули -->
     <script src="src/firebase.js" type="module"></script>
     <script src="src/user.js" type="module"></script>
