@@ -60,6 +60,32 @@
         </div>
     </div>
 
+    <!-- Инициализация Telegram WebApp -->
+    <script>
+        // Нормализация данных Telegram WebApp
+        if (window.Telegram?.WebApp?.initData) {
+            try {
+                if (typeof Telegram.WebApp.initData === 'string') {
+                    const initData = new URLSearchParams(Telegram.WebApp.initData);
+                    Telegram.WebApp.initDataUnsafe = {};
+                    
+                    initData.forEach((value, key) => {
+                        try {
+                            Telegram.WebApp.initDataUnsafe[key] = value.startsWith('{') 
+                                ? JSON.parse(value) 
+                                : value;
+                        } catch {
+                            Telegram.WebApp.initDataUnsafe[key] = value;
+                        }
+                    });
+                }
+                Telegram.WebApp.expand(); // Раскрываем WebApp на весь экран
+            } catch (e) {
+                console.warn('Error processing Telegram initData:', e);
+            }
+        }
+    </script>
+
     <!-- Подключаем скрипты как модули -->
     <script src="src/firebase.js" type="module"></script>
     <script src="src/user.js" type="module"></script>
