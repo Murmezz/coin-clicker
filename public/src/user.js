@@ -1,65 +1,141 @@
-import { auth, db } from './firebase.js';
+window.userModule = (function() {
+    // Состояние пользователя
+    const state = {
+        USER_ID: '',
+        currentUsername: '',
+        coins: 100,
+        highscore: 0,
+        transferHistory: []
+    };
 
-// Приватные переменные состояния
-let state = {
-    USER_ID: '',
-    currentUsername: '',
-    coins: 0,
-    highscore: 0,
-    transferHistory: []
-};
-
-// Геттеры для получения данных
-export const getUserId = () => state.USER_ID;
-export const getUsername = () => state.currentUsername;
-export const getCoins = () => state.coins;
-export const getHighscore = () => state.highscore;
-export const getTransferHistory = () => [...state.transferHistory];
-
-// Сеттеры для обновления данных
-export const updateUserState = (newState) => {
-    state = { ...state, ...newState };
-};
-
-export async function initUser() {
-    try {
-        const { user } = await auth.signInAnonymously();
-        state.USER_ID = user.uid;
-
-        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-            const tgUser = Telegram.WebApp.initDataUnsafe.user;
-            state.currentUsername = tgUser.username 
-                ? `@${tgUser.username.toLowerCase()}` 
-                : `@user${tgUser.id.slice(-4)}`;
-        } else {
-            state.currentUsername = `@user_${Math.random().toString(36).substr(2, 8)}`;
+    // Приватные методы
+    async function saveToDatabase() {
+        try {
+            await firebase.database().ref(`users/${state.USER_ID}`).update({
+                balance: state.coins,
+                highscore: state.highscore,
+                lastUpdate: firebase.database.ServerValue.TIMESTAMP
+            });
+        } catch (error) {
+            console.error("Ошибка сохранения:", error);
         }
-
-        await db.ref(`users/${state.USER_ID}`).update({
-            username: state.currentUsername,
-            balance: firebase.database.ServerValue.increment(0),
-            highscore: firebase.database.ServerValue.increment(0)
-        });
-
-    } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
-        state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
     }
-}
 
-export async function loadData() {
-    return new Promise((resolve) => {
-        db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                updateUserState({
-                    coins: data.balance || 0,
-                    highscore: data.highscore || 0,
-                    transferHistory: data.transfers || []
-                });
+    async function registerUsername(username) {
+        const lowercaseUsername = username.toLowerCase();
+        await firebase.database().ref(`username_lookup/${lowercaseUsername}`).set(state.USER_ID);
+    }
+
+    // Публичные методы
+    return {
+        async initUser() {
+            try {
+                // Аутентификация
+                await firebase.auth().signInAnonymously();
+                
+                // Инициализация данных
+                const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
+                state.USER_ID = tgUser ? `tg_${tgUser.id}` : `local_${Date.now()}`;
+                state.currentUsername = tgUser?.username 
+                    ? `@${tgUser.username}` 
+                    : `@user_${state.USER_ID.slice(-4)}`;
+
+                // Проверка существующего пользователя
+                const userRef = firebase.database().ref(`users/${state.USER_ID}`);
+                const snapshot = await userRef.once('value');
+                
+                if (snapshot.exists()) {
+                    // Загрузка существующих данных
+                    const data = snapshot.val();
+                    state.coins = data.balance || 100;
+                    state.highscore = data.highscore || 0;
+                    state.transferHistory = data.transfers || [];
+                    state.currentUsername = data.username || state.currentUsername;
+                } else {
+                    // Регистрация нового пользователя
+                    await userRef.set({
+                        username: state.currentUsername,
+                        balance: 100,
+                        highscore: 0,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    await registerUsername(state.currentUsername);
+                }
+            } catch (error) {
+                console.error("Ошибка инициализации:", error);
+                // Fallback
+                state.USER_ID = `local_${Date.now()}`;
+                state.currentUsername = "@guest";
+                state.coins = 100;
             }
-            resolve();
-        });
-    });
-}
+        },
+
+        async makeTransfer(username, amount) {
+            try {
+                // Поиск без учета регистра
+                const lowercaseUsername = username.toLowerCase();
+                const userIdSnapshot = await firebase.database()
+                    .ref(`username_lookup/${lowercaseUsername}`)
+                    .once('value');
+                
+                if (!userIdSnapshot.exists()) {
+                    return { success: false, message: 'Пользователь не найден' };
+                }
+
+                const recipientId = userIdSnapshot.val();
+                const recipientData = (await firebase.database()
+                    .ref(`users/${recipientId}`)
+                    .once('value')).val();
+
+                // Проверка баланса
+                if (amount > state.coins || amount <= 0) {
+                    return { success: false, message: 'Неверная сумма' };
+                }
+
+                // Подготовка транзакции
+                const transferId = firebase.database().ref().push().key;
+                const transferData = {
+                    amount: amount,
+                    date: new Date().toISOString(),
+                    from: state.currentUsername,
+                    to: username
+                };
+
+                // Обновления в базе
+                const updates = {};
+                updates[`users/${state.USER_ID}/balance`] = state.coins - amount;
+                updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
+                updates[`users/${state.USER_ID}/transfers/${transferId}`] = transferData;
+                updates[`users/${recipientId}/transfers/${transferId}`] = transferData;
+
+                // Выполнение транзакции
+                await firebase.database().ref().update(updates);
+                
+                // Обновление состояния
+                state.coins -= amount;
+                state.transferHistory = {
+                    ...state.transferHistory,
+                    [transferId]: transferData
+                };
+                
+                return { success: true, message: `Переведено ${amount} коинов` };
+            } catch (error) {
+                console.error("Ошибка перевода:", error);
+                return { success: false, message: 'Ошибка при переводе' };
+            }
+        },
+
+        // Геттеры
+        getUserId: () => state.USER_ID,
+        getUsername: () => state.currentUsername,
+        getCoins: () => state.coins,
+        getHighscore: () => state.highscore,
+        getTransferHistory: () => ({...state.transferHistory}),
+
+        // Обновление состояния
+        updateUserState(newState) {
+            Object.assign(state, newState);
+            saveToDatabase();
+        }
+    };
+})();
