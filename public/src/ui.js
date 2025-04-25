@@ -1,46 +1,68 @@
-window.uiModule = {
-    showTransferPage() {
-        const pagesContainer = document.getElementById('pages-container');
-        pagesContainer.innerHTML = `
-            <div class="page">
-                <div class="page-header">
-                    <button class="back-button">←</button>
-                    <h2 class="page-title">Перевод</h2>
-                </div>
-                <div class="page-content">
-                    <div class="transfer-form">
-                        <input type="text" id="transfer-username" placeholder="@username" class="transfer-input">
-                        <input type="number" id="transfer-amount" placeholder="Сумма" min="1" class="transfer-input">
-                        <button id="do-transfer" class="transfer-button">Отправить</button>
-                        <div id="transfer-result"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Кнопка "назад"
-        pagesContainer.querySelector('.back-button').addEventListener('click', () => {
-            pagesContainer.style.display = 'none';
-        });
-        
-        // Кнопка перевода
-        document.getElementById('do-transfer').addEventListener('click', async () => {
-            const username = document.getElementById('transfer-username').value;
-            const amount = parseInt(document.getElementById('transfer-amount').value);
+import { getCoins, getHighscore } from './user.js';
+import { makeTransfer, renderTransferHistory } from './transfers.js';
+
+export function getElement(id) {
+    return document.getElementById(id);
+}
+
+export function updateDisplays() {
+    const coinsDisplay = getElement('coins');
+    const highscoreDisplay = getElement('highscore');
+    if (coinsDisplay) coinsDisplay.textContent = getCoins();
+    if (highscoreDisplay) highscoreDisplay.textContent = getHighscore();
+}
+
+export function showMessage(text, type) {
+    const messageDiv = getElement('transfer-message');
+    if (!messageDiv) return;
+    messageDiv.textContent = text;
+    messageDiv.className = `transfer-message ${type}-message`;
+}
+
+export function showTransferPage() {
+    const pagesContainer = getElement('pages-container');
+    const transferPageTemplate = getElement('transfer-page-template');
+    
+    if (!pagesContainer || !transferPageTemplate) return;
+    
+    const transferPage = transferPageTemplate.cloneNode(true);
+    transferPage.id = 'active-transfer-page';
+    transferPage.style.display = 'block';
+    
+    pagesContainer.innerHTML = '';
+    pagesContainer.appendChild(transferPage);
+    pagesContainer.style.display = 'block';
+    
+    renderTransferHistory();
+
+    const sendButton = transferPage.querySelector('#send-coins');
+    const usernameInput = transferPage.querySelector('#username');
+    const amountInput = transferPage.querySelector('#amount');
+    
+    if (sendButton && usernameInput && amountInput) {
+        sendButton.addEventListener('click', async () => {
+            const recipient = usernameInput.value.trim();
+            const amount = parseInt(amountInput.value);
             
-            if (!username || !amount) {
-                document.getElementById('transfer-result').innerHTML = 'Заполните все поля';
+            if (!recipient.startsWith('@')) {
+                showMessage('Введите @username получателя', 'error');
                 return;
             }
             
-            try {
-                await window.transfersModule.makeTransfer(username, amount);
-                document.getElementById('transfer-result').innerHTML = 'Перевод успешен!';
-            } catch (error) {
-                document.getElementById('transfer-result').innerHTML = 'Ошибка: ' + error.message;
+            const result = await makeTransfer(recipient, amount);
+            showMessage(result.message, result.success ? 'success' : 'error');
+            
+            if (result.success) {
+                usernameInput.value = '';
+                amountInput.value = '';
             }
         });
-        
-        pagesContainer.style.display = 'block';
     }
-};
+
+    const backButton = transferPage.querySelector('.back-button');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            pagesContainer.style.display = 'none';
+        });
+    }
+}
