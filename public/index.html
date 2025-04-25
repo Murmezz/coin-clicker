@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,47 +9,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-
-    <script>
-    // Обработчик данных Telegram WebApp
-   (function() {
-    if (!window.Telegram?.WebApp) return;
-    
-    try {
-        // Если initData существует, но initDataUnsafe - нет
-        if (Telegram.WebApp.initData && !Telegram.WebApp.initDataUnsafe) {
-            Telegram.WebApp.initDataUnsafe = {};
-            
-            // Обрабатываем разные форматы данных
-            if (typeof Telegram.WebApp.initData === 'string') {
-                // Удаляем некорректные символы в начале строки
-                const cleanData = Telegram.WebApp.initData.replace(/^[^a-zA-Z0-9]+/, '');
-                
-                try {
-                    // Пробуем распарсить как URL-параметры
-                    const params = new URLSearchParams(cleanData);
-                    params.forEach((value, key) => {
-                        try {
-                            Telegram.WebApp.initDataUnsafe[key] = 
-                                value.startsWith('{') ? JSON.parse(value) : value;
-                        } catch {
-                            Telegram.WebApp.initDataUnsafe[key] = value;
-                        }
-                    });
-                } catch (e) {
-                    console.warn('Failed to parse initData as URL params', e);
-                }
-            }
-        }
-        
-        // Инициализация WebApp
-        Telegram.WebApp.ready();
-        Telegram.WebApp.expand();
-    } catch (e) {
-        console.error('Telegram WebApp initialization error:', e);
-    }
-})();
-</script>
 </head>
 <body>
     <div class="container">
@@ -78,8 +37,9 @@
         <div id="pages-container" style="display: none;"></div>
     </div>
 
-    <!-- Шаблоны страниц -->
+    <!-- Шаблоны страниц (скрытые) -->
     <div hidden>
+        <!-- Шаблон страницы перевода -->
         <div id="transfer-page-template" class="page">
             <div class="page-header">
                 <button class="back-button">←</button>
@@ -100,34 +60,11 @@
         </div>
     </div>
 
-    <!-- Подключаем скрипты -->
+    <!-- Подключаем скрипты как модули -->
     <script src="src/firebase.js" type="module"></script>
     <script src="src/user.js" type="module"></script>
     <script src="src/transfers.js" type="module"></script>
     <script src="src/ui.js" type="module"></script>
     <script src="src/main.js" type="module"></script>
-     <script src="src/telegram-fix.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-    <!-- Fallback для тестирования -->
-    <script>
-    if (typeof Telegram === 'undefined') {
-        window.Telegram = {
-            WebApp: {
-                initDataUnsafe: {
-                    user: {
-                        id: Math.floor(Math.random() * 1000000),
-                        username: 'testuser_' + Math.random().toString(36).substr(2, 5),
-                        first_name: 'Test'
-                    }
-                },
-                ready: () => console.log('Fallback Telegram WebApp ready'),
-                expand: () => console.log('Fallback expand called'),
-                enableClosingConfirmation: () => console.log('Closing confirmation enabled')
-            }
-        };
-        console.warn('Running in fallback mode');
-    }
-    </script>
 </body>
 </html>
