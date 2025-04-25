@@ -81,6 +81,26 @@ export async function loadData() {
     }
 }
 
+export async function getTransferHistory() {
+    try {
+        if (userData.telegramId) {
+            const transfersRef = db.ref(`transfers/${userData.telegramId}`);
+            const snapshot = await transfersRef.orderByChild('timestamp').limitToLast(10).once('value');
+            const transfers = [];
+            
+            snapshot.forEach((childSnapshot) => {
+                transfers.unshift(childSnapshot.val());
+            });
+            
+            return transfers;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error getting transfer history:', error);
+        return [];
+    }
+}
+
 export async function updateUserData(updates) {
     try {
         if (userData.telegramId) {
