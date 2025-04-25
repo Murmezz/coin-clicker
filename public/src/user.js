@@ -1,88 +1,65 @@
-// Импортируем Firebase через CDN (стандартный способ)
-import firebase from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js';
-import 'https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js';
-import 'https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js';
+import { auth, db } from './firebase.js';
 
-// Состояние пользователя
-const state = {
+// Приватные переменные состояния
+let state = {
     USER_ID: '',
     currentUsername: '',
-    coins: 100,
+    coins: 0,
     highscore: 0,
-    transferHistory: {}
+    transferHistory: []
 };
 
-// Инициализация Firebase (должна быть вызвана до использования)
-let db;
+// Геттеры для получения данных
+export const getUserId = () => state.USER_ID;
+export const getUsername = () => state.currentUsername;
+export const getCoins = () => state.coins;
+export const getHighscore = () => state.highscore;
+export const getTransferHistory = () => [...state.transferHistory];
 
-export async function initUser(firebaseApp) {
+// Сеттеры для обновления данных
+export const updateUserState = (newState) => {
+    state = { ...state, ...newState };
+};
+
+export async function initUser() {
     try {
-        db = firebase.database(firebaseApp);
-        
-        // Анонимная аутентификация
-        await firebase.auth().signInAnonymously();
-        
-        // Инициализация пользователя
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        state.USER_ID = tgUser ? `tg_${tgUser.id}` : `local_${Date.now()}`;
-        state.currentUsername = tgUser?.username 
-            ? `@${tgUser.username}` 
-            : `@user_${state.USER_ID.slice(-4)}`;
+        const { user } = await auth.signInAnonymously();
+        state.USER_ID = user.uid;
 
-        // Проверка/создание пользователя в базе
-        const userRef = db.ref(`users/${state.USER_ID}`);
-        const snapshot = await userRef.once('value');
-        
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            state.coins = data.balance || 100;
-            state.highscore = data.highscore || 0;
-            state.transferHistory = data.transfers || {};
+        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+            const tgUser = Telegram.WebApp.initDataUnsafe.user;
+            state.currentUsername = tgUser.username 
+                ? `@${tgUser.username.toLowerCase()}` 
+                : `@user${tgUser.id.slice(-4)}`;
         } else {
-            await userRef.set({
-                username: state.currentUsername,
-                balance: 100,
-                highscore: 0,
-                createdAt: firebase.database.ServerValue.TIMESTAMP
-            });
+            state.currentUsername = `@user_${Math.random().toString(36).substr(2, 8)}`;
         }
+
+        await db.ref(`users/${state.USER_ID}`).update({
+            username: state.currentUsername,
+            balance: firebase.database.ServerValue.increment(0),
+            highscore: firebase.database.ServerValue.increment(0)
+        });
+
     } catch (error) {
-        console.error("Init error:", error);
-        state.coins = 100; // Fallback
+        console.error('Ошибка инициализации:', error);
+        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
+        state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
     }
 }
 
-// Геттеры
-export function getCoins() { return state.coins; }
-export function getHighscore() { return state.highscore; }
-export function getUsername() { return state.currentUsername; }
-
-// Перевод средств
-export async function makeTransfer(username, amount) {
-    try {
-        // Поиск пользователя (без учета регистра)
-        const snapshot = await db.ref('users')
-            .orderByChild('username')
-            .equalTo(username.toLowerCase())
-            .once('value');
-
-        if (!snapshot.exists()) {
-            return { success: false, message: 'Пользователь не найден' };
-        }
-
-        // Подготовка транзакции
-        const [recipientId, recipientData] = Object.entries(snapshot.val())[0];
-        const updates = {};
-        updates[`users/${state.USER_ID}/balance`] = state.coins - amount;
-        updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
-
-        // Выполнение
-        await db.ref().update(updates);
-        state.coins -= amount;
-        
-        return { success: true, message: `Переведено ${amount} коинов` };
-    } catch (error) {
-        console.error("Transfer error:", error);
-        return { success: false, message: 'Ошибка перевода' };
-    }
+export async function loadData() {
+    return new Promise((resolve) => {
+        db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                updateUserState({
+                    coins: data.balance || 0,
+                    highscore: data.highscore || 0,
+                    transferHistory: data.transfers || []
+                });
+            }
+            resolve();
+        });
+    });
 }
