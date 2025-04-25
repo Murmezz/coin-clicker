@@ -1,13 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Coin Clicker</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Подключаем Firebase через CDN -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    
+    <!-- Инициализация Firebase -->
+    <script>
+    // Конфигурация Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
+        authDomain: "fastcoin-7db18.firebaseapp.com",
+        databaseURL: "https://fastcoin-7db18-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "fastcoin-7db18",
+        storageBucket: "fastcoin-7db18.appspot.com",
+        messagingSenderId: "1024804439259",
+        appId: "1:1024804439259:web:351a470a824712c494f8fe"
+    };
+
+    // Инициализация приложения
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            const db = firebase.database(app);
+            const auth = firebase.auth(app);
+            
+            // Анонимная авторизация
+            auth.signInAnonymously()
+                .catch(error => console.error("Firebase auth error:", error));
+            
+            // Делаем доступным для других скриптов
+            window.firebaseApp = { db, auth };
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.error("Firebase initialization failed:", error);
+        }
+    });
+    </script>
+    
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div class="container">
@@ -36,9 +74,8 @@
         <div id="pages-container" style="display: none;"></div>
     </div>
 
-    <!-- Шаблоны страниц (скрытые) -->
+    <!-- Шаблоны страниц -->
     <div hidden>
-        <!-- Шаблон страницы перевода -->
         <div id="transfer-page-template" class="page">
             <div class="page-header">
                 <button class="back-button">←</button>
@@ -60,7 +97,6 @@
     </div>
 
     <!-- Подключаем скрипты как модули -->
-    <script src="src/firebase.js" type="module"></script>
     <script src="src/user.js" type="module"></script>
     <script src="src/transfers.js" type="module"></script>
     <script src="src/ui.js" type="module"></script>
