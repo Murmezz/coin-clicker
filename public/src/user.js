@@ -25,18 +25,44 @@ export async function initUser() {
     try {
         await auth.signInAnonymously();
         
-        // Новый способ получения данных пользователя
         let tgUser = null;
+        
+        // Безопасное получение данных пользователя
         if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
             tgUser = Telegram.WebApp.initDataUnsafe.user;
-        } else if (window.Telegram?.WebApp?.initData) {
-            // Парсим initData если он пришел как строка
-            const initData = new URLSearchParams(Telegram.WebApp.initData);
-            const userStr = initData.get('user');
-            if (userStr) {
-                tgUser = JSON.parse(userStr);
-            }
+        } else {
+            // Fallback для тестирования
+            tgUser = {
+                id: Math.floor(Math.random() * 1000000),
+                username: 'testuser'
+            };
         }
+
+        state.USER_ID = `tg_${tgUser.id}`;
+        state.currentUsername = tgUser.username 
+            ? `@${tgUser.username.toLowerCase()}` 
+            : `@user${tgUser.id.toString().slice(-4)}`;
+
+        // Работа с базой данных
+        const userRef = db.ref(`users/${state.USER_ID}`);
+        const snapshot = await userRef.once('value');
+
+        if (!snapshot.exists()) {
+            await userRef.set({
+                username: state.currentUsername,
+                balance: 0,
+                highscore: 0,
+                transfers: []
+            });
+        }
+
+        await loadData();
+    } catch (error) {
+        console.error('Init error:', error);
+        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
+        state.currentUsername = '@guest';
+    }
+}
 
         if (!tgUser) {
             throw new Error('Telegram user not found');
