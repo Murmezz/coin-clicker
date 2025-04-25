@@ -1,7 +1,9 @@
-// user.js
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js";
-import { getDatabase, ref, set, update, push, onValue, once } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js";
+// Импортируем Firebase через CDN (стандартный способ)
+import firebase from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js';
+import 'https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js';
+import 'https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js';
 
+// Состояние пользователя
 const state = {
     USER_ID: '',
     currentUsername: '',
@@ -10,23 +12,26 @@ const state = {
     transferHistory: {}
 };
 
-let auth, db;
+// Инициализация Firebase (должна быть вызвана до использования)
+let db;
 
 export async function initUser(firebaseApp) {
     try {
-        auth = getAuth(firebaseApp);
-        db = getDatabase(firebaseApp);
+        db = firebase.database(firebaseApp);
         
-        await signInAnonymously(auth);
+        // Анонимная аутентификация
+        await firebase.auth().signInAnonymously();
         
+        // Инициализация пользователя
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
         state.USER_ID = tgUser ? `tg_${tgUser.id}` : `local_${Date.now()}`;
         state.currentUsername = tgUser?.username 
             ? `@${tgUser.username}` 
             : `@user_${state.USER_ID.slice(-4)}`;
 
-        const userRef = ref(db, `users/${state.USER_ID}`);
-        const snapshot = await once(userRef);
+        // Проверка/создание пользователя в базе
+        const userRef = db.ref(`users/${state.USER_ID}`);
+        const snapshot = await userRef.once('value');
         
         if (snapshot.exists()) {
             const data = snapshot.val();
@@ -34,51 +39,50 @@ export async function initUser(firebaseApp) {
             state.highscore = data.highscore || 0;
             state.transferHistory = data.transfers || {};
         } else {
-            await set(userRef, {
+            await userRef.set({
                 username: state.currentUsername,
                 balance: 100,
                 highscore: 0,
-                createdAt: Date.now()
+                createdAt: firebase.database.ServerValue.TIMESTAMP
             });
         }
     } catch (error) {
         console.error("Init error:", error);
-        state.coins = 100;
+        state.coins = 100; // Fallback
     }
 }
 
-export function getCoins() {
-    return state.coins;
-}
+// Геттеры
+export function getCoins() { return state.coins; }
+export function getHighscore() { return state.highscore; }
+export function getUsername() { return state.currentUsername; }
 
-export function getHighscore() {
-    return state.highscore;
-}
-
-export function getUsername() {
-    return state.currentUsername;
-}
-
+// Перевод средств
 export async function makeTransfer(username, amount) {
     try {
-        const lowercaseUsername = username.toLowerCase();
-        const usernameRef = ref(db, `username_lookup/${lowercaseUsername}`);
-        const usernameSnap = await once(usernameRef);
-        
-        if (!usernameSnap.exists()) {
-            return { success: false, message: 'User not found' };
+        // Поиск пользователя (без учета регистра)
+        const snapshot = await db.ref('users')
+            .orderByChild('username')
+            .equalTo(username.toLowerCase())
+            .once('value');
+
+        if (!snapshot.exists()) {
+            return { success: false, message: 'Пользователь не найден' };
         }
 
+        // Подготовка транзакции
+        const [recipientId, recipientData] = Object.entries(snapshot.val())[0];
         const updates = {};
         updates[`users/${state.USER_ID}/balance`] = state.coins - amount;
-        updates[`users/${usernameSnap.val()}/balance`] = (await getCoins(usernameSnap.val())) + amount;
-        
-        await update(ref(db), updates);
+        updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
+
+        // Выполнение
+        await db.ref().update(updates);
         state.coins -= amount;
         
-        return { success: true, message: `Sent ${amount} coins` };
+        return { success: true, message: `Переведено ${amount} коинов` };
     } catch (error) {
         console.error("Transfer error:", error);
-        return { success: false, message: error.message };
+        return { success: false, message: 'Ошибка перевода' };
     }
 }
