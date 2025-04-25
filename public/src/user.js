@@ -1,5 +1,6 @@
 import { auth, db } from './firebase.js';
 
+// Состояние приложения
 const state = {
     USER_ID: '',
     currentUsername: '',
@@ -8,61 +9,44 @@ const state = {
     transferHistory: []
 };
 
+// Геттеры
 export const getUserId = () => state.USER_ID;
 export const getUsername = () => state.currentUsername;
 export const getCoins = () => state.coins;
 export const getHighscore = () => state.highscore;
 export const getTransferHistory = () => [...state.transferHistory];
 
+// Обновление состояния
 export const updateUserState = (newState) => {
     Object.assign(state, newState);
 };
 
+// Инициализация пользователя
 export async function initUser() {
     try {
+        // Аутентификация в Firebase
         await auth.signInAnonymously();
         
-        // Безопасное получение данных пользователя
-        let tgUser = null;
+        // Получаем данные пользователя
+        let tgUser = getTelegramUserData();
         
-        // Проверяем разные варианты получения данных
-        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-            tgUser = Telegram.WebApp.initDataUnsafe.user;
-        } else if (window.Telegram?.WebApp?.initData) {
-            try {
-                const cleanData = Telegram.WebApp.initData.toString()
-                    .replace(/^[^a-zA-Z0-9]+/, '');
-                
-                const params = new URLSearchParams(cleanData);
-                const userStr = params.get('user');
-                if (userStr) tgUser = JSON.parse(userStr);
-            } catch (e) {
-                console.warn('Failed to parse user data:', e);
-            }
-        }
-
-        // Fallback если данные не получены
-        if (!tgUser) {
-            tgUser = {
-                id: Math.floor(Math.random() * 1000000),
-                first_name: 'Гость',
-                username: 'guest_' + Math.random().toString(36).substr(2, 5)
-            };
-        }
-
+        // Устанавливаем ID и username
         state.USER_ID = `tg_${tgUser.id}`;
-        state.currentUsername = tgUser.username 
-            ? `@${tgUser.username.toLowerCase()}` 
-            : `@user${tgUser.id.toString().slice(-4)}`;
-
-        // Далее ваша существующая логика работы с базой данных...
+        state.currentUsername = formatUsername(tgUser);
+        
+        // Инициализация в базе данных
+        await initializeUserInDatabase();
+        
+        // Загрузка данных
+        await loadData();
         
     } catch (error) {
-        console.error('Init error:', error);
-        // Fallback логика
+        console.error('User initialization failed:', error);
+        setFallbackUserData();
     }
 }
 
+// Загрузка данных из базы
 export async function loadData() {
     return new Promise((resolve) => {
         db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
@@ -77,4 +61,50 @@ export async function loadData() {
             resolve();
         });
     });
+}
+
+// Вспомогательные функции
+function getTelegramUserData() {
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+        return Telegram.WebApp.initDataUnsafe.user;
+    }
+    
+    // Fallback данные
+    return {
+        id: Math.floor(Math.random() * 1000000),
+        first_name: 'Гость',
+        username: 'guest_' + Math.random().toString(36).slice(2, 7)
+    };
+}
+
+function formatUsername(user) {
+    return user.username 
+        ? `@${user.username.toLowerCase()}` 
+        : `@user${user.id.toString().slice(-4)}`;
+}
+
+async function initializeUserInDatabase() {
+    const userRef = db.ref(`users/${state.USER_ID}`);
+    const snapshot = await userRef.once('value');
+    
+    if (!snapshot.exists()) {
+        await userRef.set({
+            username: state.currentUsername,
+            balance: 0,
+            highscore: 0,
+            transfers: []
+        });
+        
+        // Создаем запись для поиска по username
+        await db.ref(`usernames/${state.currentUsername.toLowerCase()}`)
+              .set(state.USER_ID);
+    }
+}
+
+function setFallbackUserData() {
+    state.USER_ID = `local_${Math.random().toString(36).slice(2, 11)}`;
+    state.currentUsername = '@guest';
+    state.coins = 0;
+    state.highscore = 0;
+    state.transferHistory = [];
 }
