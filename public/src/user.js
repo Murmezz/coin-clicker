@@ -24,13 +24,29 @@ export async function initUser() {
         
         // Безопасное получение данных пользователя
         let tgUser = null;
+        
+        // Проверяем разные варианты получения данных
         if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
             tgUser = Telegram.WebApp.initDataUnsafe.user;
-        } else {
-            // Fallback для тестирования
+        } else if (window.Telegram?.WebApp?.initData) {
+            try {
+                const cleanData = Telegram.WebApp.initData.toString()
+                    .replace(/^[^a-zA-Z0-9]+/, '');
+                
+                const params = new URLSearchParams(cleanData);
+                const userStr = params.get('user');
+                if (userStr) tgUser = JSON.parse(userStr);
+            } catch (e) {
+                console.warn('Failed to parse user data:', e);
+            }
+        }
+
+        // Fallback если данные не получены
+        if (!tgUser) {
             tgUser = {
                 id: Math.floor(Math.random() * 1000000),
-                first_name: 'Guest'
+                first_name: 'Гость',
+                username: 'guest_' + Math.random().toString(36).substr(2, 5)
             };
         }
 
@@ -39,24 +55,11 @@ export async function initUser() {
             ? `@${tgUser.username.toLowerCase()}` 
             : `@user${tgUser.id.toString().slice(-4)}`;
 
-        // Работа с базой данных
-        const userRef = db.ref(`users/${state.USER_ID}`);
-        const snapshot = await userRef.once('value');
-
-        if (!snapshot.exists()) {
-            await userRef.set({
-                username: state.currentUsername,
-                balance: 0,
-                highscore: 0,
-                transfers: []
-            });
-        }
-
-        await loadData();
+        // Далее ваша существующая логика работы с базой данных...
+        
     } catch (error) {
         console.error('Init error:', error);
-        state.USER_ID = `local_${Math.random().toString(36).slice(2, 11)}`;
-        state.currentUsername = '@guest';
+        // Fallback логика
     }
 }
 
