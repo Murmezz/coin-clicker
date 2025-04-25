@@ -1,64 +1,64 @@
-// Вместо импорта используем глобальный объект
-const { db, auth } = window.firebaseApp;
-
-const state = {
-  USER_ID: '',
-  currentUsername: '',
-  coins: 0,
-  highscore: 0
+// Состояние приложения
+const userState = {
+    USER_ID: '',
+    currentUsername: '',
+    coins: 0,
+    highscore: 0,
+    transferHistory: []
 };
 
-export async function initUser() {
-  try {
-    // Ждем аутентификации
-    await new Promise((resolve) => {
-      auth.onAuthStateChanged(user => resolve(user));
-    });
+// Геттеры
+const getUserId = () => userState.USER_ID;
+const getUsername = () => userState.currentUsername;
+const getCoins = () => userState.coins;
+const getHighscore = () => userState.highscore;
+const getTransferHistory = () => [...userState.transferHistory];
 
-    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
-    state.USER_ID = `tg_${tgUser.id || 'guest_' + Math.random().toString(36).substr(2, 8)}`;
-    state.currentUsername = tgUser.username 
-      ? `@${tgUser.username.toLowerCase()}` 
-      : `@user${state.USER_ID.slice(-4)}`;
+// Обновление состояния
+const updateUserState = (newState) => {
+    Object.assign(userState, newState);
+};
 
-    // Создаем/обновляем пользователя
-    await db.ref(`users/${state.USER_ID}`).update({
-      username: state.currentUsername,
-      balance: firebase.database.ServerValue.increment(0),
-      highscore: firebase.database.ServerValue.increment(0)
-    });
-
-  } catch (error) {
-    console.error('Init error:', error);
-  }
-}
-
-export async function initUser() {
+// Инициализация пользователя
+const initializeUser = async () => {
     try {
+        // Аутентификация
+        const { auth, db } = window.firebaseApp;
         await auth.signInAnonymously();
         
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        state.USER_ID = tgUser ? `tg_${tgUser.id}` : `local_${Math.random().toString(36).substr(2, 9)}`;
+        // Получаем данные пользователя
+        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+        userState.USER_ID = `tg_${tgUser.id || Math.random().toString(36).slice(2, 10)}`;
         
-        // ГАРАНТИРОВАННОЕ создание username
-        state.currentUsername = tgUser?.username 
-            ? `@${tgUser.username.toLowerCase()}` 
-            : `@user${state.USER_ID.slice(-4)}`;
+        // Формируем username
+        userState.currentUsername = tgUser.username 
+            ? `@${tgUser.username.toLowerCase()}`
+            : `@user${userState.USER_ID.slice(-4)}`;
 
-        // Обязательное сохранение username в базу
-        await db.ref(`users/${state.USER_ID}/username`).set(state.currentUsername);
+        // Инициализация в базе данных
+        await db.ref(`users/${userState.USER_ID}`).update({
+            username: userState.currentUsername,
+            balance: firebase.database.ServerValue.increment(0),
+            highscore: firebase.database.ServerValue.increment(0),
+            transfers: []
+        });
+
+        // Загрузка данных
+        await loadUserData();
         
-        await loadData();
     } catch (error) {
-        console.error('Init error:', error);
-        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
-        state.currentUsername = '@guest';
+        console.error('User initialization failed:', error);
+        // Fallback данные
+        userState.USER_ID = `local_${Date.now()}`;
+        userState.currentUsername = '@guest';
     }
-}
+};
 
-export async function loadData() {
+// Загрузка данных пользователя
+const loadUserData = () => {
     return new Promise((resolve) => {
-        db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
+        const { db } = window.firebaseApp;
+        db.ref(`users/${userState.USER_ID}`).on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 updateUserState({
@@ -70,4 +70,15 @@ export async function loadData() {
             resolve();
         });
     });
-}
+};
+
+// Экспорт
+export {
+    getUserId,
+    getUsername,
+    getCoins,
+    getHighscore,
+    getTransferHistory,
+    initializeUser as initUser,
+    loadUserData as loadData
+};
