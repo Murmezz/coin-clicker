@@ -27,12 +27,14 @@ export async function initUser() {
     try {
         // Получаем данные из Telegram WebApp
         const tg = window.Telegram.WebApp;
-        if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+        
+        // Проверяем доступность данных Telegram
+        if (!tg  !tg.initDataUnsafe  !tg.initDataUnsafe.user) {
             throw new Error('Telegram user data not available');
         }
 
         const telegramUser = tg.initDataUnsafe.user;
-        userData.telegramId = telegramUser.id.toString();
+        userData.telegramId = String(telegramUser.id);
         userData.username = telegramUser.username || null;
 
         // Проверяем существование пользователя в базе
