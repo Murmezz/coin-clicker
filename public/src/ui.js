@@ -1,4 +1,4 @@
-import { updateTransferHistory, makeTransfer } from './transfers.js';
+import { updateTransferHistory, sendCoins } from './transfers.js';
 import { getCoins, getHighscore } from './user.js';
 
 export function updateDisplays() {
@@ -42,17 +42,14 @@ export function showTransferPage() {
             messageDiv.className = 'transfer-message';
             
             try {
-                const result = await makeTransfer(username, amount);
-                if (result.success) {
+                const result = await sendCoins(username, amount);
+                if (result) {
                     messageDiv.className = 'transfer-message success-message';
-                    messageDiv.textContent = result.message;
+                    messageDiv.textContent = 'Перевод успешно выполнен';
                     usernameInput.value = '';
                     amountInput.value = '';
                     updateDisplays();
                     await updateTransferHistory();
-                } else {
-                    messageDiv.className = 'transfer-message error-message';
-                    messageDiv.textContent = result.message;
                 }
             } catch (error) {
                 messageDiv.className = 'transfer-message error-message';
