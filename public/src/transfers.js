@@ -19,7 +19,6 @@ export async function sendCoins(recipientUsername, amount) {
             throw new Error('Insufficient balance');
         }
 
-        // Поиск получателя по username
         const usersRef = db.ref('users');
         const recipientSnapshot = await usersRef
             .orderByChild('username')
@@ -37,7 +36,6 @@ export async function sendCoins(recipientUsername, amount) {
             throw new Error('Cannot send coins to yourself');
         }
 
-        // Создаем транзакцию
         const transferRef = db.ref('transfers').push();
         const transferData = {
             senderId: senderUserId,
@@ -46,7 +44,6 @@ export async function sendCoins(recipientUsername, amount) {
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
-        // Обновляем балансы
         const updates = {};
         updates[`users/${senderUserId}/balance`] = currentBalance - amount;
         updates[`users/${recipientId}/balance`] = (recipientData.balance || 0) + amount;
@@ -86,12 +83,12 @@ export async function updateTransferHistory() {
                     <div>
                         <span class="history-username">${isOutgoing ? 'Отправлено' : 'Получено'}</span>
                         <span class="history-date">${new Date(transfer.timestamp).toLocaleString()}</span>
-                        </div>
+                    </div>
                 </div>
                 <span class="history-amount ${isOutgoing ? 'outgoing' : 'incoming'}">
                     ${isOutgoing ? '-' : '+'}${transfer.amount}
                 </span>
-            ;
+            `;
             
             historyList.appendChild(historyItem);
         });
