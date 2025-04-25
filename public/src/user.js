@@ -1,5 +1,6 @@
 import { auth, db } from './firebase.js';
 
+// Приватные переменные состояния
 let state = {
     USER_ID: '',
     currentUsername: '',
@@ -8,28 +9,34 @@ let state = {
     transferHistory: []
 };
 
+// Геттеры для получения данных
 export const getUserId = () => state.USER_ID;
 export const getUsername = () => state.currentUsername;
 export const getCoins = () => state.coins;
 export const getHighscore = () => state.highscore;
 export const getTransferHistory = () => [...state.transferHistory];
 
+// Сеттеры для обновления данных
 export const updateUserState = (newState) => {
     state = { ...state, ...newState };
 };
 
 export async function initUser() {
     try {
+        // Ждем аутентификации
         await auth.signInAnonymously();
         
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        if (!tgUser) throw new Error('Telegram user not found');
+        if (!tgUser) {
+            throw new Error('Telegram user not found');
+        }
 
         state.USER_ID = `tg_${tgUser.id}`;
         state.currentUsername = tgUser.username 
             ? `@${tgUser.username.toLowerCase()}` 
             : `@user${tgUser.id.toString().slice(-4)}`;
 
+        // Проверяем наличие пользователя
         const userRef = db.ref(`users/${state.USER_ID}`);
         const snapshot = await userRef.once('value');
 
@@ -52,17 +59,6 @@ export async function initUser() {
         console.error('Init error:', error);
         state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
         state.currentUsername = '@guest';
-    }
-}
-
-        // Загружаем данные
-        await loadData();
-
-    } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        // Fallback для тестирования вне Telegram
-        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
-        state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
     }
 }
 
