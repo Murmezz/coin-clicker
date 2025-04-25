@@ -4,9 +4,9 @@ import { db } from './firebase.js';
 
 async function handleCoinClick() {
   try {
+    const { db } = window.firebaseApp;
     const userId = getUserId();
-    if (!userId) throw new Error("User not authenticated");
-
+    
     await db.ref(`users/${userId}`).transaction((user) => {
       if (user) {
         user.balance = (user.balance || 0) + 1;
@@ -14,11 +14,10 @@ async function handleCoinClick() {
       }
       return user;
     });
-
+    
     updateDisplays();
   } catch (error) {
-    console.error('Ошибка при клике:', error);
-    alert("Ошибка обновления баланса. Попробуйте позже.");
+    console.error('Click error:', error);
   }
 }
 
