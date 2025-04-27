@@ -1,6 +1,7 @@
 import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
-import { showTransferPage, updateDisplays } from './ui.js';
+import { showTransferPage, updateDisplays, getElement } from './ui.js';
 import { db } from './firebase.js';
+import { initCoinGame } from './coinGame.js'; // Импорт функции для игры в монетку
 
 async function handleCoinClick() {
     try {
@@ -26,7 +27,7 @@ async function handleCoinClick() {
 }
 
 function showSimplePage(title) {
-    const pagesContainer = document.getElementById('pages-container');
+    const pagesContainer = getElement('pages-container');
     if (!pagesContainer) return;
     
     pagesContainer.innerHTML = `
@@ -61,18 +62,38 @@ async function initializeApp() {
             coinButton.addEventListener('click', handleCoinClick);
         }
 
+        // Обработчики кнопок навигации
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.addEventListener('click', () => {
-                if (btn.dataset.page === 'transfer') {
-                    showTransferPage();
-                } else {
-                    showSimplePage(btn.textContent);
+                const page = btn.dataset.page;
+                
+                switch(page) {
+                    case 'transfer':
+                        showTransferPage();
+                        break;
+                    case 'games':
+                        initCoinGame(); // Запуск игры в монетку
+                        break;
+                    default:
+                        showSimplePage(btn.textContent);
                 }
             });
         });
 
     } catch (error) {
         console.error('Ошибка инициализации:', error);
+        // Fallback для тестирования вне Telegram
+        const pagesContainer = getElement('pages-container');
+        if (pagesContainer) {
+            pagesContainer.innerHTML = `
+                <div class="page">
+                    <div class="page-content">
+                        <p class="error-message">Ошибка загрузки. Пожалуйста, откройте приложение через Telegram.</p>
+                    </div>
+                </div>
+            `;
+            pagesContainer.style.display = 'block';
+        }
     }
 }
 
