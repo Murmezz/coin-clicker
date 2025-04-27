@@ -1,5 +1,4 @@
-// Получаем Firebase из глобального объекта
-const { db, auth } = window.firebaseApp || {};
+import { db, auth } from './firebase.js';
 
 const state = {
     USER_ID: '',
@@ -8,13 +7,6 @@ const state = {
     highscore: 0,
     transferHistory: []
 };
-
-// Проверка инициализации Firebase
-function checkFirebase() {
-    if (!db || !auth) {
-        throw new Error("Firebase not initialized");
-    }
-}
 
 export const getUserId = () => state.USER_ID;
 export const getUsername = () => state.currentUsername;
@@ -28,23 +20,14 @@ export const updateUserState = (newState) => {
 
 export async function initUser() {
     try {
-        checkFirebase();
+        await auth.signInAnonymously();
         
-        // Ожидаем аутентификацию
-        await new Promise((resolve) => {
-            const unsubscribe = auth.onAuthStateChanged(user => {
-                unsubscribe();
-                resolve(user);
-            });
-        });
-
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
-        state.USER_ID = `tg_${tgUser.id || Math.random().toString(36).slice(2, 9)}`;
+        state.USER_ID = `tg_${tgUser.id || Math.random().toString(36).slice(2, 10)}`;
         state.currentUsername = tgUser.username 
             ? `@${tgUser.username.toLowerCase()}` 
             : `@user${state.USER_ID.slice(-4)}`;
 
-        // Работа с базой
         await db.ref(`users/${state.USER_ID}`).update({
             username: state.currentUsername,
             balance: 0,
@@ -55,13 +38,12 @@ export async function initUser() {
         await loadData();
     } catch (error) {
         console.error('Init error:', error);
-        state.USER_ID = `local_${Math.random().toString(36).slice(2, 9)}`;
+        state.USER_ID = `local_${Math.random().toString(36).slice(2, 10)}`;
         state.currentUsername = '@guest';
     }
 }
 
 export async function loadData() {
-    checkFirebase();
     return new Promise((resolve) => {
         db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
             if (snapshot.exists()) {
