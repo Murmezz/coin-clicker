@@ -1,7 +1,7 @@
 import { auth, db } from './firebase.js';
 
 let state = {
-    USER_ID: '',
+    USER_ID: '', // Используется только для внутренней логики, не для базы данных
     currentUsername: '',
     coins: 0,
     highscore: 0,
@@ -27,7 +27,7 @@ export async function initUser() {
         }
 
         const tgUserId = tgUser.id.toString(); // Уникальный ID аккаунта TG
-        state.USER_ID = `tg_${tgUserId}`; // Префикс для ясности
+        state.USER_ID = `tg_${tgUserId}`; // Для внутренней логики
         state.currentUsername = tgUser.username 
             ? `@${tgUser.username.toLowerCase()}` 
             : `@user${tgUser.id.toString().slice(-4)}`;
@@ -51,7 +51,7 @@ export async function initUser() {
 
     } catch (error) {
         console.error('Ошибка инициализации:', error);
-        // Fallback для тестирования вне Telegram
+        // Для тестов вне Telegram
         state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
         state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
     }
