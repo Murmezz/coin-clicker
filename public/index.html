@@ -1,43 +1,14 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Coin Clicker</title>
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Подключаем Firebase -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>    <!-- Инициализация Firebase -->
-
-    <!-- Инициализация Firebase -->
-    <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
-        authDomain: "fastcoin-7db18.firebaseapp.com",
-        databaseURL: "https://fastcoin-7db18-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "fastcoin-7db18",
-        storageBucket: "fastcoin-7db18.appspot.com",
-        messagingSenderId: "1024804439259",
-        appId: "1:1024804439259:web:351a470a824712c494f8fe"
-    };
-
-    // Инициализация
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(app);
-    const auth = firebase.auth(app);
-
-    // Анонимная авторизация
-    auth.signInAnonymously()
-        .catch(error => console.error("Auth error:", error));
-    </script>
-
-    <!-- Подключаем скрипты в правильном порядке -->
-    <script src="src/user.js"></script>
-    <script src="src/transfers.js"></script>
-    <script src="src/ui.js"></script>
-    <script src="src/main.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
 </head>
 <body>
     <div class="container">
@@ -66,8 +37,9 @@
         <div id="pages-container" style="display: none;"></div>
     </div>
 
-    <!-- Шаблоны страниц -->
+    <!-- Шаблоны страниц (скрытые) -->
     <div hidden>
+        <!-- Шаблон страницы перевода -->
         <div id="transfer-page-template" class="page">
             <div class="page-header">
                 <button class="back-button">←</button>
@@ -88,10 +60,11 @@
         </div>
     </div>
 
-    <!-- Подключаем скрипты -->
-    <script src="src/user.js"></script>
-    <script src="src/transfers.js"></script>
-    <script src="src/ui.js"></script>
-    <script src="src/main.js"></script>
+    <!-- Подключаем скрипты как модули -->
+    <script src="src/firebase.js" type="module"></script>
+    <script src="src/user.js" type="module"></script>
+    <script src="src/transfers.js" type="module"></script>
+    <script src="src/ui.js" type="module"></script>
+    <script src="src/main.js" type="module"></script>
 </body>
 </html>
