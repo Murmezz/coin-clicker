@@ -57,15 +57,32 @@ async function initializeApp() {
         await loadData();
         updateDisplays();
 
+        console.log('Инициализация приложения...'); // Отладочное сообщение
+
         const coinButton = document.querySelector('.coin-button');
         if (coinButton) {
             coinButton.addEventListener('click', handleCoinClick);
+            console.log('Кнопка монеты найдена и обработана'); // Отладочное сообщение
         }
 
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            console.log(`Найдена кнопка: ${btn.textContent}`, btn); // Отладочное сообщение
+            btn.addEventListener('click', () => {
+                console.log(`Нажата кнопка: ${btn.dataset.page}`); // Отладочное сообщение
+                
+                if (btn.dataset.page === 'transfer') {
+                    showTransferPage();
+                } else if (btn.dataset.page === 'games') {
+                    console.log('Попытка запуска игры...'); // Отладочное сообщение
+                    initCoinGame();
+                } else {
+                    showSimplePage(btn.textContent);
+                }
+            });
+        });
 
     } catch (error) {
         console.error('Ошибка инициализации:', error);
-        showMessage('Ошибка загрузки приложения', 'error');
     }
 }
 
