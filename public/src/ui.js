@@ -1,22 +1,25 @@
-function getElement(id) {
+import { getCoins, getHighscore } from './user.js';
+import { makeTransfer, renderTransferHistory } from './transfers.js';
+
+export function getElement(id) {
     return document.getElementById(id);
 }
 
-function updateDisplays() {
+export function updateDisplays() {
     const coinsDisplay = getElement('coins');
     const highscoreDisplay = getElement('highscore');
     if (coinsDisplay) coinsDisplay.textContent = getCoins();
     if (highscoreDisplay) highscoreDisplay.textContent = getHighscore();
 }
 
-function showMessage(text, type) {
+export function showMessage(text, type) {
     const messageDiv = getElement('transfer-message');
     if (!messageDiv) return;
     messageDiv.textContent = text;
     messageDiv.className = `transfer-message ${type}-message`;
 }
 
-function showTransferPage() {
+export function showTransferPage() {
     const pagesContainer = getElement('pages-container');
     const transferPageTemplate = getElement('transfer-page-template');
     
@@ -57,31 +60,6 @@ function showTransferPage() {
     }
 
     const backButton = transferPage.querySelector('.back-button');
-    if (backButton) {
-        backButton.addEventListener('click', () => {
-            pagesContainer.style.display = 'none';
-        });
-    }
-}
-
-function showSimplePage(title) {
-    const pagesContainer = getElement('pages-container');
-    if (!pagesContainer) return;
-    
-    pagesContainer.innerHTML = `
-        <div class="page">
-            <div class="page-header">
-                <button class="back-button">←</button>
-                <h2 class="page-title">${title}</h2>
-            </div>
-            <div class="page-content">
-                <p>Раздел в разработке</p>
-            </div>
-        </div>
-    `;
-    pagesContainer.style.display = 'block';
-    
-    const backButton = pagesContainer.querySelector('.back-button');
     if (backButton) {
         backButton.addEventListener('click', () => {
             pagesContainer.style.display = 'none';
