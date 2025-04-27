@@ -3,22 +3,26 @@ import { showTransferPage, updateDisplays } from './ui.js';
 import { db } from './firebase.js';
 
 async function handleCoinClick() {
-  try {
-    const { db } = window.firebaseApp;
-    const userId = getUserId();
-    
-    await db.ref(`users/${userId}`).transaction((user) => {
-      if (user) {
-        user.balance = (user.balance || 0) + 1;
-        user.highscore = Math.max(user.highscore || 0, user.balance);
-      }
-      return user;
-    });
-    
-    updateDisplays();
-  } catch (error) {
-    console.error('Click error:', error);
-  }
+    try {
+        const currentCoins = getCoins();
+        const currentHighscore = getHighscore();
+        const newCoins = currentCoins + 1;
+        const newHighscore = Math.max(currentHighscore, newCoins);
+        
+        await db.ref(`users/${getUserId()}`).update({ 
+            balance: newCoins, 
+            highscore: newHighscore 
+        });
+        
+        updateUserState({
+            coins: newCoins,
+            highscore: newHighscore
+        });
+        
+        updateDisplays();
+    } catch (error) {
+        console.error('Ошибка при клике:', error);
+    }
 }
 
 function showSimplePage(title) {
