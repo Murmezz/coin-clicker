@@ -61,7 +61,9 @@ async function initializeApp() {
         if (coinButton) {
             coinButton.addEventListener('click', handleCoinClick);
         }
-
+// В функции initializeApp()
+console.log('Кнопка игр:', document.querySelector('[data-page="games"]')); // Должна вернуть кнопку
+console.log('Функция initCoinGame:', typeof initCoinGame); // Должна вернуть "function
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (btn.dataset.page === 'transfer') {
