@@ -162,8 +162,8 @@ async function startCoinFlipGame() {
     // Начинаем анимацию
     coin.classList.add('flipping');
     
-    // Задержка для завершения анимации
-    setTimeout(() => {
+    // Создаем отдельную асинхронную функцию для обработки результата
+    const handleResult = async () => {
         // Останавливаем анимацию и устанавливаем конечное положение
         coin.classList.remove('flipping');
         
@@ -204,8 +204,10 @@ async function startCoinFlipGame() {
         // Обновляем элементы управления для новой игры
         const betInput = getElement('bet-amount');
         if (betInput) betInput.max = getCoins();
-        
-    }, 2500); // Должно совпадать с длительностью анимации
+    };
+
+    // Задержка для завершения анимации
+    setTimeout(handleResult, 2500); // Должно совпадать с длительностью анимации
 }
 
 function showSimplePage(title) {
