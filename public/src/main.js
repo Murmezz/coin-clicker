@@ -1,7 +1,7 @@
 import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
-import { showTransferPage, updateDisplays, getElement } from './ui.js';
+import { showTransferPage, updateDisplays, getElement, showMessage } from './ui.js';
 import { db } from './firebase.js';
-import { initCoinGame } from './coinGame.js'; // Импорт функции для игры в монетку
+import { initCoinGame } from './coinGame.js';
 
 async function handleCoinClick() {
     try {
@@ -57,33 +57,50 @@ async function initializeApp() {
         await loadData();
         updateDisplays();
 
-        console.log('Инициализация приложения...'); // Отладочное сообщение
-
+        // Обработчик основной монеты
         const coinButton = document.querySelector('.coin-button');
         if (coinButton) {
             coinButton.addEventListener('click', handleCoinClick);
-            console.log('Кнопка монеты найдена и обработана'); // Отладочное сообщение
         }
 
+        // Обработчик кнопок навигации
         document.querySelectorAll('.nav-button').forEach(btn => {
-            console.log(`Найдена кнопка: ${btn.textContent}`, btn); // Отладочное сообщение
-            btn.addEventListener('click', () => {
-                console.log(`Нажата кнопка: ${btn.dataset.page}`); // Отладочное сообщение
-                
-                if (btn.dataset.page === 'transfer') {
-                    showTransferPage();
-                } else if (btn.dataset.page === 'games') {
-                    console.log('Попытка запуска игры...'); // Отладочное сообщение
-                    initCoinGame();
-                } else {
-                    showSimplePage(btn.textContent);
+            // Проверяем, что кнопка существует и имеет атрибут data-page
+            if (!btn || !btn.dataset.page) {
+                console.error('Некорректная кнопка:', btn);
+                return;
+            }
+
+            btn.addEventListener('click', function() {
+                // Проверяем, какая кнопка была нажата
+                switch(this.dataset.page) {
+                    case 'transfer':
+                        showTransferPage();
+                        break;
+                    case 'games':
+                        // Дополнительная проверка перед запуском игры
+                        if (typeof initCoinGame === 'function') {
+                            initCoinGame();
+                        } else {
+                            console.error('Функция initCoinGame не найдена');
+                            showMessage('Ошибка загрузки игры', 'error');
+                        }
+                        break;
+                    default:
+                        showSimplePage(this.textContent);
                 }
             });
         });
 
     } catch (error) {
         console.error('Ошибка инициализации:', error);
+        showMessage('Произошла ошибка при загрузке', 'error');
     }
 }
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+// Явная проверка перед запуском приложения
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
