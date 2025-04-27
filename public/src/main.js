@@ -88,9 +88,17 @@ function initCoinGameControls() {
     
     // Обновление максимальной ставки
     betInput.max = getCoins();
+    betInput.value = '';
+    
+    // Сброс выбора
+    gameState.userChoice = null;
+    gameState.currentBet = 0;
+    headsButton.classList.remove('active');
+    tailsButton.classList.remove('active');
     
     // Обработчики выбора стороны монеты
     headsButton.addEventListener('click', () => {
+        if (gameState.isPlaying) return;
         gameState.userChoice = 'heads';
         headsButton.classList.add('active');
         tailsButton.classList.remove('active');
@@ -98,6 +106,7 @@ function initCoinGameControls() {
     });
     
     tailsButton.addEventListener('click', () => {
+        if (gameState.isPlaying) return;
         gameState.userChoice = 'tails';
         tailsButton.classList.add('active');
         headsButton.classList.remove('active');
@@ -106,6 +115,7 @@ function initCoinGameControls() {
     
     // Обработчик изменения суммы ставки
     betInput.addEventListener('input', () => {
+        if (gameState.isPlaying) return;
         const betAmount = parseInt(betInput.value);
         gameState.currentBet = isNaN(betAmount) ? 0 : Math.min(betAmount, getCoins());
         updateStartButton();
@@ -126,49 +136,37 @@ function initCoinGameControls() {
     function updateStartButton() {
         startButton.disabled = !(gameState.currentBet > 0 && gameState.userChoice);
     }
-}
-
-async function startCoinFlipGame() {
-    gameState.isPlaying = true;
-    const betAmount = gameState.currentBet;
-    const userChoice = gameState.userChoice;
     
-    // Списание ставки
-    const newCoins = getCoins() - betAmount;
-    await db.ref(`users/${getUserId()}`).update({ balance: newCoins });
-    updateUserState({ coins: newCoins });
-    updateDisplays();
-    
-    // Получаем элементы
-    const coinContainer = getElement('coin-flip-container');
-    const coin = getElement('coin');
+    // Скрываем результаты предыдущей игры
     const resultDiv = getElement('game-result');
-    const startButton = getElement('start-game');
+    if (resultDiv) resultDiv.classList.add('hidden');
+    
+    // Скрываем анимацию монетки
+    const coinContainer = getElement('coin-flip-container');
+    if (coinContainer) coinContainer.classList.add('hidden');
+    
+    // Восстанавливаем исходный UI
     const betControls = document.querySelector('.bet-controls');
-    
-    if (!coinContainer || !coin || !resultDiv || !startButton || !betControls) return;
-    
-    // Показываем подтверждение ставки
-    betControls.innerHTML = `
-        <div class="bet-confirmation">
-            <p>Ставка принята: ${betAmount} коинов на ${userChoice === 'heads' ? 'орла' : 'решку'}</p>
-            <div class="countdown">Подбрасываем через: 3</div>
-        </div>
-    `;
-    
-    // Запускаем обратный отсчет
-    let countdown = 3;
-    const countdownElement = document.querySelector('.countdown');
-    const countdownInterval = setInterval(() => {
-        countdown--;
-        if (countdown > 0) {
-            countdownElement.textContent = `Подбрасываем через: ${countdown}`;
-        } else {
-            clearInterval(countdownInterval);
-            startCoinFlipAnimation();
-        }
-    }, 1000);
-    
+    if (betControls) {
+        betControls.innerHTML = `
+            <input type="number" id="bet-amount" placeholder="Сумма ставки" min="1" max="${getCoins()}" class="transfer-input">
+            <div class="choice-buttons">
+                <button id="choose-heads" class="coin-choice-button">
+                    <img src="https://i.postimg.cc/5yCLJbrb/1000048704.png" alt="Орел" class="choice-icon">
+                    <span>Орел</span>
+                </button>
+                <button id="choose-tails" class="coin-choice-button">
+                    <img src="https://i.postimg.cc/G2BSdqqB/1000048918.png" alt="Решка" class="choice-icon">
+                    <span>Решка</span>
+                </button>
+            </div>
+            <button id="start-game" class="transfer-button" disabled>Сделать ставку</button>
+        `;
+        
+        // Переинициализируем обработчики
+        initCoinGameControls();
+    }
+}
     // Функция анимации подбрасывания монетки
     const startCoinFlipAnimation = async () => {
         // Сброс предыдущего состояния
