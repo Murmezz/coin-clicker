@@ -241,7 +241,6 @@ function initCoinGameControls() {
         resultDiv.classList.add('hidden');
         initCoinGameControls();
     };
-}
 
 function showSimplePage(title) {
     const pagesContainer = getElement('pages-container');
