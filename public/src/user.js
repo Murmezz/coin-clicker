@@ -1,4 +1,6 @@
-import { db, auth } from './firebase.js';
+// Используем глобальные объекты Firebase
+const db = window.firebaseDb;
+const auth = window.firebaseAuth;
 
 const state = {
     USER_ID: '',
@@ -8,22 +10,24 @@ const state = {
     transferHistory: []
 };
 
-export const getUserId = () => state.USER_ID;
-export const getUsername = () => state.currentUsername;
-export const getCoins = () => state.coins;
-export const getHighscore = () => state.highscore;
-export const getTransferHistory = () => [...state.transferHistory];
+function getUserId() { return state.USER_ID; }
+function getUsername() { return state.currentUsername; }
+function getCoins() { return state.coins; }
+function getHighscore() { return state.highscore; }
+function getTransferHistory() { return [...state.transferHistory]; }
 
-export const updateUserState = (newState) => {
+function updateUserState(newState) {
     Object.assign(state, newState);
-};
+}
 
-export async function initUser() {
+async function initUser() {
     try {
-        await auth.signInAnonymously();
-        
+        await new Promise((resolve) => {
+            auth.onAuthStateChanged(user => resolve(user));
+        });
+
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
-        state.USER_ID = `tg_${tgUser.id || Math.random().toString(36).slice(2, 10)}`;
+        state.USER_ID = `tg_${tgUser.id || 'guest_' + Math.random().toString(36).substr(2, 8)}`;
         state.currentUsername = tgUser.username 
             ? `@${tgUser.username.toLowerCase()}` 
             : `@user${state.USER_ID.slice(-4)}`;
@@ -38,12 +42,12 @@ export async function initUser() {
         await loadData();
     } catch (error) {
         console.error('Init error:', error);
-        state.USER_ID = `local_${Math.random().toString(36).slice(2, 10)}`;
+        state.USER_ID = `local_${Math.random().toString(36).slice(2, 9)}`;
         state.currentUsername = '@guest';
     }
 }
 
-export async function loadData() {
+async function loadData() {
     return new Promise((resolve) => {
         db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -58,3 +62,15 @@ export async function loadData() {
         });
     });
 }
+
+// Делаем функции доступными глобально
+window.userModule = {
+    getUserId,
+    getUsername,
+    getCoins,
+    getHighscore,
+    getTransferHistory,
+    initUser,
+    loadData,
+    updateUserState
+};
