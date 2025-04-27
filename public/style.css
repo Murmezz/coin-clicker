@@ -623,7 +623,7 @@ body {
 .coin-front {
     background: linear-gradient(135deg, #ffeb3b 0%, #fbc02d 100%);
     transform: rotateY(0deg);
-    background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
+    background-image: url('https://i.imgur.com/JQ8o5Oy.png');
     background-size: 80%;
     background-position: center;
     background-repeat: no-repeat;
@@ -632,7 +632,7 @@ body {
 .coin-back {
     background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
     transform: rotateY(180deg);
-    background-image: url('https://i.postimg.cc/G2BSdqqB/1000048918.png');
+    background-image: url('https://i.imgur.com/7QZvLQk.png');
     background-size: 80%;
     background-position: center;
     background-repeat: no-repeat;
