@@ -22,32 +22,31 @@ export async function findUser(username) {
         }
         return null;
     } catch (error) {
-        console.error('Search error:', error);
+        console.error('Ошибка поиска:', error);
         return null;
     }
 }
-
-// ... остальной код transfers.js без изменений ...
 
 export async function makeTransfer(recipientUsername, amount) {
     try {
         const currentUsername = getUsername();
         const coins = getCoins();
         const USER_ID = getUserId();
-        const recipient = await findUser(recipientUsername);
+        const transferHistory = getTransferHistory();
 
-        // Проверки
         if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
             return { success: false, message: 'Нельзя перевести себе' };
         }
+        
+        const recipient = await findUser(recipientUsername);
         if (!recipient) {
-            return { success: false, message: 'Пользователь не найден' };
+            return { success: false, message: 'Пользователь не зарегистрирован' };
         }
+        
         if (amount > coins || amount < 1) {
             return { success: false, message: 'Некорректная сумма' };
         }
 
-        // Создаем транзакцию
         const transaction = {
             date: new Date().toISOString(),
             from: currentUsername,
@@ -56,23 +55,21 @@ export async function makeTransfer(recipientUsername, amount) {
             status: 'completed'
         };
 
-        // Обновляем данные
-        await db.ref(`users/${USER_ID}`).update({
-            balance: coins - amount,
-            transfers: [...getTransferHistory(), transaction]
-        });
+        const updates = {};
+        updates[`users/${USER_ID}/balance`] = coins - amount;
+        updates[`users/${USER_ID}/transfers`] = [...transferHistory, transaction];
+        updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
+        updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
 
-        await db.ref(`users/${recipient.userId}`).update({
-            balance: (recipient.balance || 0) + amount,
-            transfers: [...(recipient.transfers || []), transaction]
-        });
+        await db.ref().update(updates);
 
         updateUserState({
             coins: coins - amount,
-            transferHistory: [...getTransferHistory(), transaction]
+            transferHistory: [...transferHistory, transaction]
         });
-
+        
         updateDisplays();
+
         return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
         console.error('Ошибка перевода:', error);
@@ -85,13 +82,16 @@ export function renderTransferHistory() {
     if (!historyList) return;
     
     const transferHistory = getTransferHistory();
+    
     historyList.innerHTML = transferHistory.length === 0 
         ? '<p>Нет истории переводов</p>'
         : transferHistory.slice(0, 10).map(tx => `
-            <div class="history-item">
-                <span class="history-username">${tx.to}</span>
+            <div class="history-item ${tx.status}">
+                <div>
+                    <span class="history-username">${tx.to}</span>
+                    <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
+                </div>
                 <span class="history-amount">-${tx.amount}</span>
-                <span class="history-date">${new Date(tx.date).toLocaleString()}</span>
             </div>
         `).join('');
 }
