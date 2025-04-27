@@ -1,17 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coin Clicker</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js";
-        import { getDatabase } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js";
-
+    <!-- Подключаем Firebase через CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    
+    <!-- Инициализация Firebase -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
         const firebaseConfig = {
             apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
             authDomain: "fastcoin-7db18.firebaseapp.com",
@@ -22,22 +24,18 @@
             appId: "1:1024804439259:web:351a470a824712c494f8fe"
         };
 
-        const app = initializeApp(firebaseConfig);
-        window.db = getDatabase(app);
-        window.auth = getAuth(app);
-        signInAnonymously(window.auth);
-
-        
-            window.firebaseApp = { db, auth };
-            console.log("Firebase initialized successfully");
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            window.firebaseDb = firebase.database(app);
+            window.firebaseAuth = firebase.auth(app);
+            
+            firebaseAuth.signInAnonymously()
+                .catch(error => console.error("Auth error:", error));
         } catch (error) {
-            console.error("Firebase initialization failed:", error);
+            console.error("Firebase init error:", error);
         }
     });
     </script>
-    
-    <!-- Telegram Web App SDK -->
-   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div class="container">
@@ -88,11 +86,10 @@
         </div>
     </div>
 
-    <!-- Подключаем скрипты как модули -->
-    <script src="src/firebase.js" type="module"></script>
-    <script src="src/user.js" type="module"></script>
-    <script src="src/transfers.js" type="module"></script>
-    <script src="src/ui.js" type="module"></script>
-    <script src="src/main.js" type="module"></script>
+    <!-- Подключаем скрипты -->
+    <script src="src/user.js"></script>
+    <script src="src/transfers.js"></script>
+    <script src="src/ui.js"></script>
+    <script src="src/main.js"></script>
 </body>
 </html>
