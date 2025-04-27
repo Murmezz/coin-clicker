@@ -62,38 +62,21 @@ async function initializeApp() {
             coinButton.addEventListener('click', handleCoinClick);
         }
 
-        // Обработчики кнопок навигации
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.addEventListener('click', () => {
-                const page = btn.dataset.page;
-                
-                switch(page) {
-                    case 'transfer':
-                        showTransferPage();
-                        break;
-                    case 'games':
-                        initCoinGame(); // Запуск игры в монетку
-                        break;
-                    default:
-                        showSimplePage(btn.textContent);
+                if (btn.dataset.page === 'transfer') {
+                    showTransferPage();
+                } else if (btn.dataset.page === 'games') {
+                    initCoinGame(); // Явный вызов функции игры
+                } else {
+                    showSimplePage(btn.textContent);
                 }
             });
         });
 
     } catch (error) {
         console.error('Ошибка инициализации:', error);
-        // Fallback для тестирования вне Telegram
-        const pagesContainer = getElement('pages-container');
-        if (pagesContainer) {
-            pagesContainer.innerHTML = `
-                <div class="page">
-                    <div class="page-content">
-                        <p class="error-message">Ошибка загрузки. Пожалуйста, откройте приложение через Telegram.</p>
-                    </div>
-                </div>
-            `;
-            pagesContainer.style.display = 'block';
-        }
+        showMessage('Ошибка загрузки приложения', 'error');
     }
 }
 
