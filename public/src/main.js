@@ -1,7 +1,9 @@
 import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
 import { showTransferPage, updateDisplays, getElement, showMessage } from './ui.js';
 import { db } from './firebase.js';
-import { initCoinGame } from './coinGame.js';
+
+// Глобальная проверка загрузки модуля игры
+let gameModuleLoaded = false;
 
 async function handleCoinClick() {
     try {
@@ -51,56 +53,76 @@ function showSimplePage(title) {
     }
 }
 
+async function launchGame() {
+    try {
+        if (!gameModuleLoaded) {
+            const gameModule = await import('./coinGame.js');
+            window.initCoinGame = gameModule.initCoinGame;
+            gameModuleLoaded = true;
+        }
+        window.initCoinGame();
+    } catch (error) {
+        console.error('Ошибка загрузки игры:', error);
+        showMessage('Игра временно недоступна', 'error');
+    }
+}
+
+function setupNavigation() {
+    // Удаляем старые обработчики
+    const buttons = document.querySelectorAll('.nav-button');
+    buttons.forEach(btn => {
+        btn.replaceWith(btn.cloneNode(true));
+    });
+
+    // Добавляем новые обработчики
+    document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => this.style.transform = '', 200);
+            
+            switch(this.dataset.page) {
+                case 'transfer':
+                    showTransferPage();
+                    break;
+                case 'games':
+                    launchGame();
+                    break;
+                default:
+                    showSimplePage(this.textContent);
+            }
+        });
+    });
+}
+
+function createEmergencyButton() {
+    if (document.getElementById('emergency-game-btn')) return;
+    
+    const btn = document.createElement('button');
+    btn.id = 'emergency-game-btn';
+    btn.textContent = 'ЗАПУСТИТЬ ИГРУ';
+    btn.addEventListener('click', launchGame);
+    document.body.appendChild(btn);
+}
+
 async function initializeApp() {
     try {
         await initUser();
         await loadData();
         updateDisplays();
 
-        // Обработчик основной монеты
-        const coinButton = document.querySelector('.coin-button');
-        if (coinButton) {
-            coinButton.addEventListener('click', handleCoinClick);
-        }
-
-        // Обработчик кнопок навигации
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            // Проверяем, что кнопка существует и имеет атрибут data-page
-            if (!btn || !btn.dataset.page) {
-                console.error('Некорректная кнопка:', btn);
-                return;
-            }
-
-            btn.addEventListener('click', function() {
-                // Проверяем, какая кнопка была нажата
-                switch(this.dataset.page) {
-                    case 'transfer':
-                        showTransferPage();
-                        break;
-                    case 'games':
-                        // Дополнительная проверка перед запуском игры
-                        if (typeof initCoinGame === 'function') {
-                            initCoinGame();
-                        } else {
-                            console.error('Функция initCoinGame не найдена');
-                            showMessage('Ошибка загрузки игры', 'error');
-                        }
-                        break;
-                    default:
-                        showSimplePage(this.textContent);
-                }
-            });
-        });
+        document.querySelector('.coin-button')?.addEventListener('click', handleCoinClick);
+        setupNavigation();
+        createEmergencyButton();
 
     } catch (error) {
         console.error('Ошибка инициализации:', error);
-        showMessage('Произошла ошибка при загрузке', 'error');
+        showMessage('Ошибка загрузки приложения', 'error');
     }
 }
 
-// Явная проверка перед запуском приложения
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
+// Двойная проверка готовности документа
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(initializeApp, 100);
 } else {
-    initializeApp();
+    document.addEventListener('DOMContentLoaded', initializeApp);
 }
