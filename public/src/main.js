@@ -139,42 +139,69 @@ async function startCoinFlipGame() {
     updateUserState({ coins: newCoins });
     updateDisplays();
     
-    // Показываем анимацию монетки
+    // Получаем элементы
     const coinContainer = getElement('coin-flip-container');
     const coin = getElement('coin');
     const resultDiv = getElement('game-result');
+    const startButton = getElement('start-game');
+    const betControls = document.querySelector('.bet-controls');
     
-    if (!coinContainer || !coin || !resultDiv) return;
+    if (!coinContainer || !coin || !resultDiv || !startButton || !betControls) return;
     
-    // Сброс предыдущего состояния
-    coinContainer.classList.remove('hidden');
-    resultDiv.classList.add('hidden');
-    coin.style.transform = 'rotateY(0)';
-    coin.classList.remove('flipping');
+    // Показываем подтверждение ставки
+    betControls.innerHTML = `
+        <div class="bet-confirmation">
+            <p>Ставка принята: ${betAmount} коинов на ${userChoice === 'heads' ? 'орла' : 'решку'}</p>
+            <div class="countdown">Подбрасываем через: 3</div>
+        </div>
+    `;
     
-    // Подготовка к анимации
-    void coin.offsetWidth; // Trigger reflow
+    // Запускаем обратный отсчет
+    let countdown = 3;
+    const countdownElement = document.querySelector('.countdown');
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+            countdownElement.textContent = `Подбрасываем через: ${countdown}`;
+        } else {
+            clearInterval(countdownInterval);
+            startCoinFlipAnimation();
+        }
+    }, 1000);
     
-    // Определение результата (50/50)
-    const isWin = Math.random() < 0.5;
-    const coinResult = isWin ? userChoice : (userChoice === 'heads' ? 'tails' : 'heads');
-    
-    // Начинаем анимацию
-    coin.classList.add('flipping');
-    
-    // Создаем отдельную асинхронную функцию для обработки результата
-    const handleResult = async () => {
-        // Останавливаем анимацию и устанавливаем конечное положение
+    // Функция анимации подбрасывания монетки
+    const startCoinFlipAnimation = async () => {
+        // Сброс предыдущего состояния
+        coinContainer.classList.remove('hidden');
+        resultDiv.classList.add('hidden');
+        coin.style.transform = 'rotateY(0)';
         coin.classList.remove('flipping');
         
-        // Устанавливаем конечное положение в зависимости от результата
-        if (coinResult === 'heads') {
-            coin.style.transform = 'rotateY(0)';
-        } else {
-            coin.style.transform = 'rotateY(180deg)';
-        }
+        // Подготовка к анимации
+        void coin.offsetWidth; // Trigger reflow
         
-        // Показываем результат
+        // Определение результата (50/50)
+        const isWin = Math.random() < 0.5;
+        const coinResult = isWin ? userChoice : (userChoice === 'heads' ? 'tails' : 'heads');
+        
+        // Начинаем анимацию
+        coin.classList.add('flipping');
+        
+        // Обработка результата после анимации
+        setTimeout(() => {
+            // Останавливаем анимацию
+            coin.classList.remove('flipping');
+            
+            // Устанавливаем конечное положение
+            coin.style.transform = coinResult === 'heads' ? 'rotateY(0)' : 'rotateY(180deg)';
+            
+            // Показываем результат
+            showGameResult(isWin, betAmount, newCoins, userChoice, coinResult);
+        }, 2500);
+    };
+    
+    // Функция показа результата
+    const showGameResult = async (isWin, betAmount, newCoins, userChoice, coinResult) => {
         if (isWin) {
             const winAmount = betAmount * 2;
             const newCoinsAfterWin = newCoins + winAmount;
@@ -186,14 +213,16 @@ async function startCoinFlipGame() {
             resultDiv.innerHTML = `
                 <div class="win-message">
                     <h3>Победа! +${winAmount} коинов</h3>
-                    <p>Выпал ${userChoice === 'heads' ? 'орёл' : 'решка'}</p>
+                    <p>Выпал ${coinResult === 'heads' ? 'орёл' : 'решка'}</p>
+                    <button id="play-again" class="transfer-button">Играть снова</button>
                 </div>
             `;
         } else {
             resultDiv.innerHTML = `
                 <div class="lose-message">
                     <h3>Проигрыш: -${betAmount} коинов</h3>
-                    <p>Выпал ${userChoice === 'heads' ? 'решка' : 'орёл'}</p>
+                    <p>Выпал ${coinResult === 'heads' ? 'орёл' : 'решка'}</p>
+                    <button id="play-again" class="transfer-button">Играть снова</button>
                 </div>
             `;
         }
@@ -201,13 +230,19 @@ async function startCoinFlipGame() {
         resultDiv.classList.remove('hidden');
         gameState.isPlaying = false;
         
-        // Обновляем элементы управления для новой игры
-        const betInput = getElement('bet-amount');
-        if (betInput) betInput.max = getCoins();
+        // Обработчик кнопки "Играть снова"
+        const playAgainButton = getElement('play-again');
+        if (playAgainButton) {
+            playAgainButton.addEventListener('click', resetGameUI);
+        }
     };
-
-    // Задержка для завершения анимации
-    setTimeout(handleResult, 2500); // Должно совпадать с длительностью анимации
+    
+    // Функция сброса UI игры
+    const resetGameUI = () => {
+        coinContainer.classList.add('hidden');
+        resultDiv.classList.add('hidden');
+        initCoinGameControls();
+    };
 }
 
 function showSimplePage(title) {
