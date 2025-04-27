@@ -145,9 +145,9 @@ function initCoinGameControls() {
     const coinContainer = getElement('coin-flip-container');
     if (coinContainer) coinContainer.classList.add('hidden');
     
-    // Восстанавливаем исходный UI
+    // Восстанавливаем исходный UI без рекурсии
     const betControls = document.querySelector('.bet-controls');
-    if (betControls) {
+    if (betControls && betControls.children.length === 0) {
         betControls.innerHTML = `
             <input type="number" id="bet-amount" placeholder="Сумма ставки" min="1" max="${getCoins()}" class="transfer-input">
             <div class="choice-buttons">
@@ -163,9 +163,42 @@ function initCoinGameControls() {
             <button id="start-game" class="transfer-button" disabled>Сделать ставку</button>
         `;
         
-        // Переинициализируем обработчики
-        initCoinGameControls();
+        // Добавляем обработчики для новых элементов
+        setupNewControls();
     }
+}
+
+function setupNewControls() {
+    // Эта функция только добавляет обработчики, не вызывая initCoinGameControls
+    const betInput = getElement('bet-amount');
+    const headsButton = getElement('choose-heads');
+    const tailsButton = getElement('choose-tails');
+    const startButton = getElement('start-game');
+    
+    if (!betInput || !headsButton || !tailsButton || !startButton) return;
+    
+    headsButton.addEventListener('click', () => {
+        if (gameState.isPlaying) return;
+        gameState.userChoice = 'heads';
+        headsButton.classList.add('active');
+        tailsButton.classList.remove('active');
+        startButton.disabled = !(gameState.currentBet > 0);
+    });
+    
+    tailsButton.addEventListener('click', () => {
+        if (gameState.isPlaying) return;
+        gameState.userChoice = 'tails';
+        tailsButton.classList.add('active');
+        headsButton.classList.remove('active');
+        startButton.disabled = !(gameState.currentBet > 0);
+    });
+    
+    betInput.addEventListener('input', () => {
+        if (gameState.isPlaying) return;
+        const betAmount = parseInt(betInput.value);
+        gameState.currentBet = isNaN(betAmount) ? 0 : Math.min(betAmount, getCoins());
+        startButton.disabled = !(gameState.currentBet > 0 && gameState.userChoice);
+    });
 }
     // Функция анимации подбрасывания монетки
     const startCoinFlipAnimation = async () => {
