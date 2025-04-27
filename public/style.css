@@ -671,6 +671,21 @@ body {
     background-color: rgba(244, 67, 54, 0.2);
 }
 
+  .choice-icon {
+    width: 30px;
+    height: 30px;
+    margin-right: 8px;
+    object-fit: contain;
+}
+
+.coin-choice-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    /* остальные существующие стили */
+}
+
 /* Адаптивные стили для мобильных */
 @media (max-width: 400px) {
     .coin-game {
