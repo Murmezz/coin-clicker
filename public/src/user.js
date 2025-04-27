@@ -1,8 +1,6 @@
-// Используем глобальные объекты Firebase
-const db = firebase.database();
-const auth = firebase.auth();
+import { auth, db } from './firebase.js';
 
-const userState = {
+let state = {
     USER_ID: '',
     currentUsername: '',
     coins: 0,
@@ -10,46 +8,58 @@ const userState = {
     transferHistory: []
 };
 
-function getUserId() { return userState.USER_ID; }
-function getUsername() { return userState.currentUsername; }
-function getCoins() { return userState.coins; }
-function getHighscore() { return userState.highscore; }
-function getTransferHistory() { return [...userState.transferHistory]; }
+export const getUserId = () => state.USER_ID;
+export const getUsername = () => state.currentUsername;
+export const getCoins = () => state.coins;
+export const getHighscore = () => state.highscore;
+export const getTransferHistory = () => [...state.transferHistory];
 
-function updateUserState(newState) {
-    Object.assign(userState, newState);
-}
+export const updateUserState = (newState) => {
+    state = { ...state, ...newState };
+};
 
-async function initUser() {
+export async function initUser() {
     try {
-        await new Promise((resolve) => {
-            auth.onAuthStateChanged(user => resolve(user));
-        });
+        // Получаем ID пользователя Telegram
+        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        if (!tgUser) {
+            throw new Error('Telegram user not found');
+        }
 
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
-        userState.USER_ID = `tg_${tgUser.id || 'guest_' + Math.random().toString(36).substr(2, 8)}`;
-        userState.currentUsername = tgUser.username 
+        const tgUserId = tgUser.id.toString(); // Уникальный ID аккаунта TG
+        state.USER_ID = `tg_${tgUserId}`; // Префикс для ясности
+        state.currentUsername = tgUser.username 
             ? `@${tgUser.username.toLowerCase()}` 
-            : `@user${userState.USER_ID.slice(-4)}`;
+            : `@user${tgUser.id.toString().slice(-4)}`;
 
-        await db.ref(`users/${userState.USER_ID}`).update({
-            username: userState.currentUsername,
-            balance: 0,
-            highscore: 0,
-            transfers: []
-        });
+        // Проверяем, есть ли пользователь в базе
+        const userRef = db.ref(`users/${state.USER_ID}`);
+        const snapshot = await userRef.once('value');
 
+        if (!snapshot.exists()) {
+            // Создаём нового пользователя
+            await userRef.set({
+                username: state.currentUsername,
+                balance: 0,
+                highscore: 0,
+                transfers: []
+            });
+        }
+
+        // Загружаем данные
         await loadData();
+
     } catch (error) {
-        console.error('Init error:', error);
-        userState.USER_ID = `local_${Math.random().toString(36).slice(2, 9)}`;
-        userState.currentUsername = '@guest';
+        console.error('Ошибка инициализации:', error);
+        // Fallback для тестирования вне Telegram
+        state.USER_ID = `local_${Math.random().toString(36).substr(2, 9)}`;
+        state.currentUsername = `@guest_${Math.random().toString(36).substr(2, 5)}`;
     }
 }
 
-async function loadData() {
+export async function loadData() {
     return new Promise((resolve) => {
-        db.ref(`users/${userState.USER_ID}`).on('value', (snapshot) => {
+        db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 updateUserState({
