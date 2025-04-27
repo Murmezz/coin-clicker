@@ -1,8 +1,13 @@
-import { db } from './firebase.js';
-import { getUserId, getUsername, getCoins, getTransferHistory, updateUserState } from './user.js';
-import { updateDisplays } from './ui.js';
+const db = window.firebaseDb;
+const { 
+    getUserId, 
+    getUsername, 
+    getCoins, 
+    getTransferHistory, 
+    updateUserState 
+} = window.userModule;
 
-export async function findUser(username) {
+async function findUser(username) {
     if (!username.startsWith('@')) return null;
     
     try {
@@ -22,12 +27,12 @@ export async function findUser(username) {
         }
         return null;
     } catch (error) {
-        console.error('Ошибка поиска:', error);
+        console.error('Search error:', error);
         return null;
     }
 }
 
-export async function makeTransfer(recipientUsername, amount) {
+async function makeTransfer(recipientUsername, amount) {
     try {
         const currentUsername = getUsername();
         const coins = getCoins();
@@ -68,16 +73,16 @@ export async function makeTransfer(recipientUsername, amount) {
             transferHistory: [...transferHistory, transaction]
         });
         
-        updateDisplays();
+        window.uiModule.updateDisplays();
 
         return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
-        console.error('Ошибка перевода:', error);
+        console.error('Transfer error:', error);
         return { success: false, message: 'Ошибка при переводе' };
     }
 }
 
-export function renderTransferHistory() {
+function renderTransferHistory() {
     const historyList = document.getElementById('history-list');
     if (!historyList) return;
     
@@ -95,3 +100,10 @@ export function renderTransferHistory() {
             </div>
         `).join('');
 }
+
+// Экспортируем функции
+window.transfersModule = {
+    findUser,
+    makeTransfer,
+    renderTransferHistory
+};
