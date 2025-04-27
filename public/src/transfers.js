@@ -1,17 +1,10 @@
-const db = window.firebaseDb;
-const { 
-    getUserId, 
-    getUsername, 
-    getCoins, 
-    getTransferHistory, 
-    updateUserState 
-} = window.userModule;
+// Убираем повторное объявление db, используем глобальный объект
 
 async function findUser(username) {
     if (!username.startsWith('@')) return null;
     
     try {
-        const snapshot = await db.ref('users')
+        const snapshot = await firebase.database().ref('users')
             .orderByChild('username')
             .equalTo(username.toLowerCase())
             .once('value');
@@ -66,14 +59,14 @@ async function makeTransfer(recipientUsername, amount) {
         updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
         updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
 
-        await db.ref().update(updates);
+        await firebase.database().ref().update(updates);
 
         updateUserState({
             coins: coins - amount,
             transferHistory: [...transferHistory, transaction]
         });
         
-        window.uiModule.updateDisplays();
+        updateDisplays();
 
         return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
@@ -100,10 +93,3 @@ function renderTransferHistory() {
             </div>
         `).join('');
 }
-
-// Экспортируем функции
-window.transfersModule = {
-    findUser,
-    makeTransfer,
-    renderTransferHistory
-};
