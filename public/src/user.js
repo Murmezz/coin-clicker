@@ -1,8 +1,8 @@
 // Используем глобальные объекты Firebase
-const db = window.firebaseDb;
-const auth = window.firebaseAuth;
+const db = firebase.database();
+const auth = firebase.auth();
 
-const state = {
+const userState = {
     USER_ID: '',
     currentUsername: '',
     coins: 0,
@@ -10,14 +10,14 @@ const state = {
     transferHistory: []
 };
 
-function getUserId() { return state.USER_ID; }
-function getUsername() { return state.currentUsername; }
-function getCoins() { return state.coins; }
-function getHighscore() { return state.highscore; }
-function getTransferHistory() { return [...state.transferHistory]; }
+function getUserId() { return userState.USER_ID; }
+function getUsername() { return userState.currentUsername; }
+function getCoins() { return userState.coins; }
+function getHighscore() { return userState.highscore; }
+function getTransferHistory() { return [...userState.transferHistory]; }
 
 function updateUserState(newState) {
-    Object.assign(state, newState);
+    Object.assign(userState, newState);
 }
 
 async function initUser() {
@@ -27,13 +27,13 @@ async function initUser() {
         });
 
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
-        state.USER_ID = `tg_${tgUser.id || 'guest_' + Math.random().toString(36).substr(2, 8)}`;
-        state.currentUsername = tgUser.username 
+        userState.USER_ID = `tg_${tgUser.id || 'guest_' + Math.random().toString(36).substr(2, 8)}`;
+        userState.currentUsername = tgUser.username 
             ? `@${tgUser.username.toLowerCase()}` 
-            : `@user${state.USER_ID.slice(-4)}`;
+            : `@user${userState.USER_ID.slice(-4)}`;
 
-        await db.ref(`users/${state.USER_ID}`).update({
-            username: state.currentUsername,
+        await db.ref(`users/${userState.USER_ID}`).update({
+            username: userState.currentUsername,
             balance: 0,
             highscore: 0,
             transfers: []
@@ -42,14 +42,14 @@ async function initUser() {
         await loadData();
     } catch (error) {
         console.error('Init error:', error);
-        state.USER_ID = `local_${Math.random().toString(36).slice(2, 9)}`;
-        state.currentUsername = '@guest';
+        userState.USER_ID = `local_${Math.random().toString(36).slice(2, 9)}`;
+        userState.currentUsername = '@guest';
     }
 }
 
 async function loadData() {
     return new Promise((resolve) => {
-        db.ref(`users/${state.USER_ID}`).on('value', (snapshot) => {
+        db.ref(`users/${userState.USER_ID}`).on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 updateUserState({
@@ -62,15 +62,3 @@ async function loadData() {
         });
     });
 }
-
-// Делаем функции доступными глобально
-window.userModule = {
-    getUserId,
-    getUsername,
-    getCoins,
-    getHighscore,
-    getTransferHistory,
-    initUser,
-    loadData,
-    updateUserState
-};
