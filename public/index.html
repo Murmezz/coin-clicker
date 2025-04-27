@@ -6,36 +6,38 @@
     <title>Coin Clicker</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- Подключаем Firebase через CDN -->
+    <!-- Подключаем Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-    
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>    <!-- Инициализация Firebase -->
+
     <!-- Инициализация Firebase -->
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const firebaseConfig = {
-            apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
-            authDomain: "fastcoin-7db18.firebaseapp.com",
-            databaseURL: "https://fastcoin-7db18-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "fastcoin-7db18",
-            storageBucket: "fastcoin-7db18.appspot.com",
-            messagingSenderId: "1024804439259",
-            appId: "1:1024804439259:web:351a470a824712c494f8fe"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyBlB5mKpyKi2MVp2ZYqbE3kBc0VdmXr3Ik",
+        authDomain: "fastcoin-7db18.firebaseapp.com",
+        databaseURL: "https://fastcoin-7db18-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "fastcoin-7db18",
+        storageBucket: "fastcoin-7db18.appspot.com",
+        messagingSenderId: "1024804439259",
+        appId: "1:1024804439259:web:351a470a824712c494f8fe"
+    };
 
-        try {
-            const app = firebase.initializeApp(firebaseConfig);
-            window.firebaseDb = firebase.database(app);
-            window.firebaseAuth = firebase.auth(app);
-            
-            firebaseAuth.signInAnonymously()
-                .catch(error => console.error("Auth error:", error));
-        } catch (error) {
-            console.error("Firebase init error:", error);
-        }
-    });
+    // Инициализация
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database(app);
+    const auth = firebase.auth(app);
+
+    // Анонимная авторизация
+    auth.signInAnonymously()
+        .catch(error => console.error("Auth error:", error));
     </script>
+
+    <!-- Подключаем скрипты в правильном порядке -->
+    <script src="src/user.js"></script>
+    <script src="src/transfers.js"></script>
+    <script src="src/ui.js"></script>
+    <script src="src/main.js"></script>
 </head>
 <body>
     <div class="container">
