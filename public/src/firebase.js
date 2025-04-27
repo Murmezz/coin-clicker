@@ -16,9 +16,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
-// Авторизуемся анонимно
 signInAnonymously(auth)
   .catch((error) => console.error("Auth error:", error));
 
-// Явно экспортируем необходимые объекты
 export { db, auth };
