@@ -26,9 +26,8 @@
         window.db = getDatabase(app);
         window.auth = getAuth(app);
         signInAnonymously(window.auth);
-    </script>
-            
-            // Делаем доступным для других скриптов
+
+        
             window.firebaseApp = { db, auth };
             console.log("Firebase initialized successfully");
         } catch (error) {
