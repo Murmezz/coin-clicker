@@ -1,25 +1,22 @@
-import { getCoins, getHighscore } from './user.js';
-import { makeTransfer, renderTransferHistory } from './transfers.js';
-
-export function getElement(id) {
+function getElement(id) {
     return document.getElementById(id);
 }
 
-export function updateDisplays() {
+function updateDisplays() {
     const coinsDisplay = getElement('coins');
     const highscoreDisplay = getElement('highscore');
     if (coinsDisplay) coinsDisplay.textContent = getCoins();
     if (highscoreDisplay) highscoreDisplay.textContent = getHighscore();
 }
 
-export function showMessage(text, type) {
+function showMessage(text, type) {
     const messageDiv = getElement('transfer-message');
     if (!messageDiv) return;
     messageDiv.textContent = text;
     messageDiv.className = `transfer-message ${type}-message`;
 }
 
-export function showTransferPage() {
+function showTransferPage() {
     const pagesContainer = getElement('pages-container');
     const transferPageTemplate = getElement('transfer-page-template');
     
@@ -60,6 +57,31 @@ export function showTransferPage() {
     }
 
     const backButton = transferPage.querySelector('.back-button');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            pagesContainer.style.display = 'none';
+        });
+    }
+}
+
+function showSimplePage(title) {
+    const pagesContainer = getElement('pages-container');
+    if (!pagesContainer) return;
+    
+    pagesContainer.innerHTML = `
+        <div class="page">
+            <div class="page-header">
+                <button class="back-button">←</button>
+                <h2 class="page-title">${title}</h2>
+            </div>
+            <div class="page-content">
+                <p>Раздел в разработке</p>
+            </div>
+        </div>
+    `;
+    pagesContainer.style.display = 'block';
+    
+    const backButton = pagesContainer.querySelector('.back-button');
     if (backButton) {
         backButton.addEventListener('click', () => {
             pagesContainer.style.display = 'none';
