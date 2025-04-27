@@ -1,37 +1,42 @@
-// Убираем повторное объявление db, используем глобальный объект
+import { db } from './firebase.js';
+import { getUserId, getUsername, getCoins, getTransferHistory, updateUserState } from './user.js';
+import { updateDisplays } from './ui.js';
 
-async function findUser(username) {
+export async function findUser(username) {
     if (!username.startsWith('@')) return null;
     
     try {
-        const snapshot = await firebase.database().ref('users')
+        const searchUsername = username.toLowerCase();
+        const snapshot = await db.ref('users')
             .orderByChild('username')
-            .equalTo(username.toLowerCase())
+            .equalTo(searchUsername)
             .once('value');
-
+        
         if (snapshot.exists()) {
-            const userData = Object.values(snapshot.val())[0];
-            return {
-                userId: Object.keys(snapshot.val())[0],
-                username: userData.username,
-                balance: userData.balance || 0,
-                transfers: userData.transfers || []
+            const users = snapshot.val();
+            const userId = Object.keys(users)[0];
+            return { 
+                userId,
+                username: users[userId].username,
+                balance: users[userId].balance || 0,
+                transfers: users[userId].transfers || []
             };
         }
         return null;
     } catch (error) {
-        console.error('Search error:', error);
+        console.error('Ошибка поиска:', error);
         return null;
     }
 }
 
-async function makeTransfer(recipientUsername, amount) {
+export async function makeTransfer(recipientUsername, amount) {
     try {
         const currentUsername = getUsername();
         const coins = getCoins();
         const USER_ID = getUserId();
         const transferHistory = getTransferHistory();
 
+        // Проверки
         if (recipientUsername.toLowerCase() === currentUsername.toLowerCase()) {
             return { success: false, message: 'Нельзя перевести себе' };
         }
@@ -59,7 +64,7 @@ async function makeTransfer(recipientUsername, amount) {
         updates[`users/${recipient.userId}/balance`] = (recipient.balance || 0) + amount;
         updates[`users/${recipient.userId}/transfers`] = [...(recipient.transfers || []), transaction];
 
-        await firebase.database().ref().update(updates);
+        await db.ref().update(updates);
 
         updateUserState({
             coins: coins - amount,
@@ -70,12 +75,12 @@ async function makeTransfer(recipientUsername, amount) {
 
         return { success: true, message: `Перевод ${amount} коинов успешен!` };
     } catch (error) {
-        console.error('Transfer error:', error);
+        console.error('Ошибка перевода:', error);
         return { success: false, message: 'Ошибка при переводе' };
     }
 }
 
-function renderTransferHistory() {
+export function renderTransferHistory() {
     const historyList = document.getElementById('history-list');
     if (!historyList) return;
     
