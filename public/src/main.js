@@ -146,21 +146,33 @@ async function startCoinFlipGame() {
     
     if (!coinContainer || !coin || !resultDiv) return;
     
+    // Сброс предыдущего состояния
     coinContainer.classList.remove('hidden');
     resultDiv.classList.add('hidden');
+    coin.style.transform = 'rotateY(0)';
+    coin.classList.remove('flipping');
     
-    // Анимация подбрасывания монетки
-    coin.style.animation = 'none';
+    // Подготовка к анимации
     void coin.offsetWidth; // Trigger reflow
-    coin.style.animation = 'flip-coin 3s ease-out forwards';
     
     // Определение результата (50/50)
     const isWin = Math.random() < 0.5;
     const coinResult = isWin ? userChoice : (userChoice === 'heads' ? 'tails' : 'heads');
     
+    // Начинаем анимацию
+    coin.classList.add('flipping');
+    
     // Задержка для завершения анимации
-    setTimeout(async () => {
-        coin.style.animation = 'none';
+    setTimeout(() => {
+        // Останавливаем анимацию и устанавливаем конечное положение
+        coin.classList.remove('flipping');
+        
+        // Устанавливаем конечное положение в зависимости от результата
+        if (coinResult === 'heads') {
+            coin.style.transform = 'rotateY(0)';
+        } else {
+            coin.style.transform = 'rotateY(180deg)';
+        }
         
         // Показываем результат
         if (isWin) {
@@ -172,38 +184,28 @@ async function startCoinFlipGame() {
             updateDisplays();
             
             resultDiv.innerHTML = `
-                <div class="result-message success-message">
-                    <h3>Поздравляем! Вы выиграли ${winAmount} коинов!</h3>
-                    <p>Монетка упала на ${userChoice === 'heads' ? 'орла' : 'решку'}</p>
+                <div class="win-message">
+                    <h3>Победа! +${winAmount} коинов</h3>
+                    <p>Выпал ${userChoice === 'heads' ? 'орёл' : 'решка'}</p>
                 </div>
             `;
         } else {
             resultDiv.innerHTML = `
-                <div class="result-message error-message">
-                    <h3>К сожалению, вы проиграли ${betAmount} коинов</h3>
-                    <p>Монетка упала на ${userChoice === 'heads' ? 'решку' : 'орла'}</p>
+                <div class="lose-message">
+                    <h3>Проигрыш: -${betAmount} коинов</h3>
+                    <p>Выпал ${userChoice === 'heads' ? 'решка' : 'орёл'}</p>
                 </div>
             `;
         }
         
         resultDiv.classList.remove('hidden');
         gameState.isPlaying = false;
-        gameState.currentBet = 0;
-        gameState.userChoice = null;
         
         // Обновляем элементы управления для новой игры
         const betInput = getElement('bet-amount');
-        const headsButton = getElement('choose-heads');
-        const tailsButton = getElement('choose-tails');
-        const startButton = getElement('start-game');
+        if (betInput) betInput.max = getCoins();
         
-        if (betInput && headsButton && tailsButton && startButton) {
-            betInput.value = '';
-            headsButton.classList.remove('active');
-            tailsButton.classList.remove('active');
-            startButton.disabled = true;
-        }
-    }, 3000);
+    }, 2500); // Должно совпадать с длительностью анимации
 }
 
 function showSimplePage(title) {
