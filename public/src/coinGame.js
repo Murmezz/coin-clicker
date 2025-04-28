@@ -100,7 +100,6 @@ async function startGame() {
     if (gameState.isPlaying || !validateBet()) return;
     gameState.isPlaying = true;
 
-    // Списание ставки
     const newCoins = getCoins() - gameState.currentBet;
     await db.ref(`users/${getUserId()}`).update({ balance: newCoins });
     updateUserState({ coins: newCoins });
@@ -158,14 +157,12 @@ async function flipCoin() {
 
     if (!coinContainer || !coin || !resultDiv) return;
 
-    // Определение результата
     gameState.result = Math.random() < 0.5 ? gameState.userChoice : 
                       (gameState.userChoice === 'heads' ? 'tails' : 'heads');
 
-    // Анимация броска
     coinContainer.classList.remove('hidden');
     coin.style.animation = 'none';
-    void coin.offsetWidth; // Сброс анимации
+    void coin.offsetWidth;
     coin.style.animation = 'flip-coin 2.5s ease-out forwards';
 
     setTimeout(() => showResult(), 2500);
@@ -178,7 +175,6 @@ async function showResult() {
     const isWin = gameState.result === gameState.userChoice;
     const winAmount = gameState.currentBet * 2;
 
-    // Обновление баланса
     if (isWin) {
         const newBalance = getCoins() + winAmount;
         await db.ref(`users/${getUserId()}`).update({ balance: newBalance });
@@ -186,7 +182,6 @@ async function showResult() {
         updateDisplays();
     }
 
-    // Отображение результата
     resultDiv.innerHTML = `
         <div class="result ${isWin ? 'win' : 'lose'}">
             <h3>${isWin ? 'Победа!' : 'Проигрыш'}</h3>
@@ -198,7 +193,6 @@ async function showResult() {
     `;
     resultDiv.classList.remove('hidden');
 
-    // Обработчик для кнопки "Играть снова"
     document.getElementById('play-again')?.addEventListener('click', () => {
         resultDiv.classList.add('hidden');
         initCoinGame();
