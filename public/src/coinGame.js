@@ -157,7 +157,7 @@ async function flipCoin() {
 
     if (!coinContainer || !coin || !resultDiv) return;
 
-    gameState.result = Math.random() < 0.5 ? gameState.userChoice : 
+    gameState.result = Math.random() < 0.9 ? gameState.userChoice : 
                       (gameState.userChoice === 'heads' ? 'tails' : 'heads');
 
     coinContainer.classList.remove('hidden');
