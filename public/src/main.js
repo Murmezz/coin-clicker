@@ -1,128 +1,111 @@
-import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
-import { showTransferPage, updateDisplays, getElement, showMessage } from './ui.js';
+import { initUser, loadData, getCoins, updateUserState, getUserId } from './user.js';
+import { showTransferPage, getElement, updateDisplays, showMessage } from './ui.js';
 import { db } from './firebase.js';
 
-// Глобальная проверка загрузки модуля игры
-let gameModuleLoaded = false;
-
-async function handleCoinClick() {
-    try {
-        const currentCoins = getCoins();
-        const currentHighscore = getHighscore();
-        const newCoins = currentCoins + 1;
-        const newHighscore = Math.max(currentHighscore, newCoins);
-        
-        await db.ref(`users/${getUserId()}`).update({ 
-            balance: newCoins, 
-            highscore: newHighscore 
-        });
-        
-        updateUserState({
-            coins: newCoins,
-            highscore: newHighscore
-        });
-        
-        updateDisplays();
-    } catch (error) {
-        console.error('Ошибка при клике:', error);
-    }
-}
-
-function showSimplePage(title) {
+// Простейшая реализация игры
+function initCoinGame() {
     const pagesContainer = getElement('pages-container');
     if (!pagesContainer) return;
-    
+
     pagesContainer.innerHTML = `
         <div class="page">
             <div class="page-header">
-                <button class="back-button">←</button>
-                <h2 class="page-title">${title}</h2>
+                <button class="back-button">← Назад</button>
+                <h2>Монетка</h2>
             </div>
             <div class="page-content">
-                <p>Раздел в разработке</p>
+                <div class="bet-section">
+                    <input type="number" id="bet-amount" placeholder="Сумма ставки" min="1" max="${getCoins()}" class="transfer-input">
+                    <div class="coin-choices">
+                        <button id="heads-btn" class="choice-btn">Орёл</button>
+                        <button id="tails-btn" class="choice-btn">Решка</button>
+                    </div>
+                    <button id="start-game" class="game-button">Играть</button>
+                </div>
+                <div id="game-result" class="game-result"></div>
             </div>
         </div>
     `;
+
     pagesContainer.style.display = 'block';
-    
-    const backButton = pagesContainer.querySelector('.back-button');
-    if (backButton) {
-        backButton.addEventListener('click', () => {
-            pagesContainer.style.display = 'none';
-        });
-    }
-}
 
-async function launchGame() {
-    try {
-        if (!gameModuleLoaded) {
-            const gameModule = await import('./coinGame.js');
-            window.initCoinGame = gameModule.initCoinGame;
-            gameModuleLoaded = true;
-        }
-        window.initCoinGame();
-    } catch (error) {
-        console.error('Ошибка загрузки игры:', error);
-        showMessage('Игра временно недоступна', 'error');
-    }
-}
+    // Обработчики
+    let userChoice = null;
+    let betAmount = 0;
 
-function setupNavigation() {
-    // Удаляем старые обработчики
-    const buttons = document.querySelectorAll('.nav-button');
-    buttons.forEach(btn => {
-        btn.replaceWith(btn.cloneNode(true));
+    document.getElementById('heads-btn').addEventListener('click', () => {
+        userChoice = 'heads';
+        document.getElementById('heads-btn').classList.add('active');
+        document.getElementById('tails-btn').classList.remove('active');
     });
 
-    // Добавляем новые обработчики
+    document.getElementById('tails-btn').addEventListener('click', () => {
+        userChoice = 'tails';
+        document.getElementById('tails-btn').classList.add('active');
+        document.getElementById('heads-btn').classList.remove('active');
+    });
+
+    document.getElementById('bet-amount').addEventListener('input', (e) => {
+        betAmount = parseInt(e.target.value) || 0;
+    });
+
+    document.getElementById('start-game').addEventListener('click', async () => {
+        if (!userChoice || betAmount < 1 || betAmount > getCoins()) {
+            showMessage('Некорректная ставка', 'error');
+            return;
+        }
+
+        // Списание ставки
+        const newCoins = getCoins() - betAmount;
+        await db.ref(`users/${getUserId()}`).update({ balance: newCoins });
+        updateUserState({ coins: newCoins });
+        updateDisplays();
+
+        // Определение результата
+        const isWin = Math.random() < 0.5;
+        const result = isWin ? userChoice : (userChoice === 'heads' ? 'tails' : 'heads');
+
+        // Обновление баланса
+        if (isWin) {
+            const winAmount = betAmount * 2;
+            await db.ref(`users/${getUserId()}`).update({ balance: newCoins + winAmount });
+            updateUserState({ coins: newCoins + winAmount });
+            updateDisplays();
+        }
+
+        // Показ результата
+        document.getElementById('game-result').innerHTML = `
+            <div class="result ${isWin ? 'win' : 'lose'}">
+                <img src="${result === 'heads' ? 
+                    'https://i.postimg.cc/5yCLJbrb/1000048704.png' : 
+                    'https://i.postimg.cc/G2BSdqqB/1000048918.png'}" 
+                    width="80">
+                <h3>${isWin ? 'Победа!' : 'Проигрыш'}</h3>
+                <p>Выпало: ${result === 'heads' ? 'Орёл' : 'Решка'}</p>
+                <p>${isWin ? `+${betAmount * 2}` : `-${betAmount}`} коинов</p>
+            </div>
+        `;
+    });
+
+    document.querySelector('.back-button').addEventListener('click', () => {
+        pagesContainer.style.display = 'none';
+    });
+}
+
+// Инициализация приложения
+async function initializeApp() {
+    await initUser();
+    await loadData();
+
     document.querySelectorAll('.nav-button').forEach(btn => {
-        btn.addEventListener('click', function() {
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => this.style.transform = '', 200);
-            
-            switch(this.dataset.page) {
-                case 'transfer':
-                    showTransferPage();
-                    break;
-                case 'games':
-                    launchGame();
-                    break;
-                default:
-                    showSimplePage(this.textContent);
+        btn.addEventListener('click', () => {
+            if (btn.dataset.page === 'transfer') {
+                showTransferPage();
+            } else if (btn.dataset.page === 'games') {
+                initCoinGame();
             }
         });
     });
 }
 
-function createEmergencyButton() {
-    if (document.getElementById('emergency-game-btn')) return;
-    
-    const btn = document.createElement('button');
-    btn.id = 'emergency-game-btn';
-    btn.textContent = 'ЗАПУСТИТЬ ИГРУ';
-    btn.addEventListener('click', launchGame);
-    document.body.appendChild(btn);
-}
-
-async function initializeApp() {
-    try {
-        await initUser();
-        await loadData();
-        updateDisplays();
-
-        document.querySelector('.coin-button')?.addEventListener('click', handleCoinClick);
-        setupNavigation();
-        createEmergencyButton();
-
-    } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        showMessage('Ошибка загрузки приложения', 'error');
-    }
-}
-
-// Двойная проверка готовности документа
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(initializeApp, 100);
-} else {
-    document.addEventListener('DOMContentLoaded', initializeApp);
-}
+document.addEventListener('DOMContentLoaded', initializeApp);
