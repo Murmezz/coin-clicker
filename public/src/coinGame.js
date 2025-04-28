@@ -1,11 +1,12 @@
-import { getElement, showMessage } from './ui.js';
+import { getElement, showMessage, updateDisplays } from './ui.js';
 import { getUserId, getCoins, updateUserState } from './user.js';
 import { db } from './firebase.js';
 
 let gameState = {
     isPlaying: false,
     currentBet: 0,
-    userChoice: null
+    userChoice: null,
+    result: null
 };
 
 export function initCoinGame() {
@@ -58,7 +59,6 @@ function setupGameControls() {
 
     if (!betInput || !headsBtn || !tailsBtn || !startBtn) return;
 
-    // Обработчики выбора
     headsBtn.addEventListener('click', () => selectChoice('heads', headsBtn, tailsBtn));
     tailsBtn.addEventListener('click', () => selectChoice('tails', tailsBtn, headsBtn));
     betInput.addEventListener('input', () => updateBet(betInput));
@@ -104,8 +104,8 @@ async function startGame() {
     const newCoins = getCoins() - gameState.currentBet;
     await db.ref(`users/${getUserId()}`).update({ balance: newCoins });
     updateUserState({ coins: newCoins });
+    updateDisplays();
 
-    // Подготовка UI
     showBetConfirmation();
     startCountdown();
 }
@@ -158,45 +158,41 @@ async function flipCoin() {
 
     if (!coinContainer || !coin || !resultDiv) return;
 
-    // Показываем анимацию
+    // Определение результата
+    gameState.result = Math.random() < 0.5 ? gameState.userChoice : 
+                      (gameState.userChoice === 'heads' ? 'tails' : 'heads');
+
+    // Анимация броска
     coinContainer.classList.remove('hidden');
     coin.style.animation = 'none';
     void coin.offsetWidth; // Сброс анимации
-
-    // Определение результата
-    const isWin = Math.random() < 0.5;
-    const result = isWin ? gameState.userChoice : 
-                    (gameState.userChoice === 'heads' ? 'tails' : 'heads');
-
-    // Запуск анимации
     coin.style.animation = 'flip-coin 2.5s ease-out forwards';
 
-    // Обработка результата
-    setTimeout(async () => {
-        showResult(isWin, result);
-        gameState.isPlaying = false;
-    }, 2500);
+    setTimeout(() => showResult(), 2500);
 }
 
-async function showResult(isWin, result) {
+async function showResult() {
     const resultDiv = getElement('game-result');
     if (!resultDiv) return;
 
-    // Обновление баланса при выигрыше
+    const isWin = gameState.result === gameState.userChoice;
+    const winAmount = gameState.currentBet * 2;
+
+    // Обновление баланса
     if (isWin) {
-        const winAmount = gameState.currentBet * 2;
         const newBalance = getCoins() + winAmount;
         await db.ref(`users/${getUserId()}`).update({ balance: newBalance });
         updateUserState({ coins: newBalance });
+        updateDisplays();
     }
 
-    // Показ результата
+    // Отображение результата
     resultDiv.innerHTML = `
         <div class="result ${isWin ? 'win' : 'lose'}">
             <h3>${isWin ? 'Победа!' : 'Проигрыш'}</h3>
-            <div class="coin-result ${result}"></div>
-            <p>Выпало: ${result === 'heads' ? 'Орёл' : 'Решка'}</p>
-            <p>${isWin ? '+' + (gameState.currentBet * 2) : '-' + gameState.currentBet} коинов</p>
+            <div class="coin-result ${gameState.result}"></div>
+            <p>Выпало: ${gameState.result === 'heads' ? 'Орёл' : 'Решка'}</p>
+            <p>${isWin ? `+${winAmount}` : `-${gameState.currentBet}`} коинов</p>
             <button id="play-again" class="transfer-button">Играть снова</button>
         </div>
     `;
