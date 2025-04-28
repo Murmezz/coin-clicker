@@ -674,11 +674,11 @@ body {
 }
 
 .coin-result.heads {
-    background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
+    background-image: url('https://i.postimg.cc/G2BSdqqB/1000048918.png');
 }
 
 .coin-result.tails {
-    background-image: url('https://i.postimg.cc/G2BSdqqB/1000048918.png');
+    background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
 }
 
 .bet-confirmation {
