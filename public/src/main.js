@@ -1,5 +1,5 @@
 import { initUser, loadData, updateUserState, getUserId, getCoins, getHighscore } from './user.js';
-import { showTransferPage, updateDisplays } from './ui.js';
+import { showTransferPage, updateDisplays, getElement, showMessage } from './ui.js';
 import { db } from './firebase.js';
 import { initCoinGame } from './coinGame.js';
 
@@ -27,7 +27,7 @@ async function handleCoinClick() {
 }
 
 function showSimplePage(title) {
-    const pagesContainer = document.getElementById('pages-container');
+    const pagesContainer = getElement('pages-container');
     if (!pagesContainer) return;
     
     pagesContainer.innerHTML = `
@@ -62,19 +62,21 @@ async function initializeApp() {
             coinButton.addEventListener('click', handleCoinClick);
         }
 
-         // Обработчики навигации
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (btn.dataset.page === 'transfer') {
                     showTransferPage();
                 } else if (btn.dataset.page === 'games') {
                     initCoinGame();
+                } else {
+                    showSimplePage(btn.textContent);
                 }
             });
         });
 
     } catch (error) {
         console.error('Ошибка инициализации:', error);
+        showMessage('Ошибка загрузки приложения', 'error');
     }
 }
 
