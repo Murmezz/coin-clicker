@@ -548,174 +548,70 @@ body {
 }
 
 /* Стили для игры "Монетка" */
-.coin-game-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.bet-controls {
+.bet-section {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    max-width: 300px;
+    margin: 0 auto;
 }
 
-.choice-buttons {
+.coin-choices {
     display: flex;
-    justify-content: space-between;
     gap: 10px;
-    margin: 10px 0;
+    justify-content: center;
 }
 
-.coin-choice-button {
-    flex: 1;
-    padding: 12px;
+.choice-btn {
+    padding: 10px 20px;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     background: rgba(124, 77, 255, 0.2);
-    color: var(--text-color);
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.coin-choice-button.active {
-    background: var(--button-bg);
     color: white;
-    box-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s;
 }
 
-.choice-icon {
-    width: 30px;
-    height: 30px;
-    margin-right: 8px;
-    object-fit: contain;
+.choice-btn.active {
+    background: #7c4dff;
+    transform: translateY(-2px);
 }
 
-.coin-flip-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 200px;
-    perspective: 1000px;
-    margin: 20px 0;
-}
-
-.coin-game {
-    width: 120px;
-    height: 120px;
-    position: relative;
-    transform-style: preserve-3d;
-}
-
-.coin-front, .coin-back {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    backface-visibility: hidden;
-    background-size: 80%;
-    background-position: center;
-    background-repeat: no-repeat;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-.coin-front {
-    background-image: url('https://i.postimg.cc/5yCLJbrb/1000048704.png');
-    background-color: #ffd700;
-    transform: rotateY(0deg);
-}
-
-.coin-back {
-    background-image: url('https://i.postimg.cc/G2BSdqqB/1000048918.png');
-    background-color: #e0e0e0;
-    transform: rotateY(180deg);
-}
-
-@keyframes flip-coin {
-    0% { transform: rotateY(0); }
-    20% { transform: rotateY(360deg); }
-    40% { transform: rotateY(720deg); }
-    60% { transform: rotateY(1080deg); }
-    80% { transform: rotateY(1440deg); }
-    100% { transform: rotateY(1800deg); }
-}
-
-.flipping {
-    animation: flip-coin 2.5s ease-out forwards;
-}
-
-.bet-confirmation {
-    text-align: center;
-    padding: 15px;
-    background: rgba(124, 77, 255, 0.1);
-    border-radius: 12px;
-    margin-bottom: 20px;
-}
-
-.bet-confirmation p {
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.countdown {
-    font-size: 18px;
-    color: var(--highlight-color);
-    font-weight: bold;
+.game-button {
+    padding: 12px;
+    background: #7c4dff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
 }
 
 .game-result {
+    margin-top: 30px;
     text-align: center;
+}
+
+.result {
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
 }
 
-.win-message {
-    color: var(--success-color);
-    background-color: rgba(76, 175, 80, 0.2);
+.result.win {
+    border-left: 4px solid #4CAF50;
 }
 
-.lose-message {
-    color: var(--error-color);
-    background-color: rgba(244, 67, 54, 0.2);
+.result.lose {
+    border-left: 4px solid #f44336;
 }
 
-#play-again {
-    margin-top: 15px;
-    width: 100%;
-}
-
-.hidden {
-    display: none;
-}
-
-/* Адаптив для мобильных */
-@media (max-width: 400px) {
-    .coin-game {
-        width: 100px;
-        height: 100px;
-    }
-    
-    .coin-choice-button {
-        padding: 10px;
-        font-size: 14px;
-    }
-}
-
-  button[data-page="games"] {
-    background: #ff0000 !important;
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
+.transfer-input {
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid #7c4dff;
+    background: rgba(30, 30, 30, 0.8);
+    color: white;
+    text-align: center;
 }
