@@ -62,12 +62,13 @@ async function initializeApp() {
             coinButton.addEventListener('click', handleCoinClick);
         }
 
+         // Обработчики навигации
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (btn.dataset.page === 'transfer') {
                     showTransferPage();
-                } else {
-                    showSimplePage(btn.textContent);
+                } else if (btn.dataset.page === 'games') {
+                    initCoinGame();
                 }
             });
         });
